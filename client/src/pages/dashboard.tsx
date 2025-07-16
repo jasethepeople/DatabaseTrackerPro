@@ -56,9 +56,9 @@ export default function Dashboard() {
       {/* Status Bar */}
       <div className="h-6 px-4 flex items-center justify-between text-xs text-white" style={{ backgroundColor: "var(--github-blue)" }}>
         <div className="flex items-center space-x-4">
-          <span>VM: Running</span>
+          <span>VM: Online</span>
           <span>main</span>
-          <span>12 files</span>
+          <span>awesome-app</span>
         </div>
         <div className="flex items-center space-x-4">
           <span>Ln 7, Col 42</span>

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, File, Folder, FilePlus, FolderPlus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface FileExplorerProps {
   onFileSelect: (file: any) => void;
@@ -10,17 +11,30 @@ interface FileExplorerProps {
 export default function FileExplorer({ onFileSelect }: FileExplorerProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["src"]));
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [newFileName, setNewFileName] = useState<string>("");
+  const [isCreatingFile, setIsCreatingFile] = useState(false);
 
-  // Mock data for now - in real app, fetch from API
-  const mockFiles = [
-    { id: 1, path: "src", isDirectory: true, content: "" },
-    { id: 2, path: "src/index.js", isDirectory: false, content: "console.log('Hello World!');" },
-    { id: 3, path: "src/app.js", isDirectory: false, content: "const express = require('express');\nconst app = express();" },
-    { id: 4, path: "src/styles.css", isDirectory: false, content: "body { margin: 0; }" },
-    { id: 5, path: "components", isDirectory: true, content: "" },
-    { id: 6, path: "package.json", isDirectory: false, content: '{\n  "name": "my-app"\n}' },
-    { id: 7, path: "README.md", isDirectory: false, content: "# My Awesome App" },
-  ];
+  // Get the awesome-app project (project ID 1)
+  const projectId = 1;
+
+  // Fetch files from API
+  const { data: files = [], isLoading, refetch } = useQuery({
+    queryKey: ["/api/projects", projectId, "files"],
+    enabled: !!projectId,
+  });
+
+  // Create file mutation
+  const createFileMutation = useMutation({
+    mutationFn: async (newFile: { projectId: number; path: string; content: string; isDirectory: boolean }) => {
+      const response = await apiRequest("POST", "/api/files", newFile);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "files"] });
+      setIsCreatingFile(false);
+      setNewFileName("");
+    },
+  });
 
   const toggleFolder = (path: string) => {
     const newExpanded = new Set(expandedFolders);
@@ -55,11 +69,38 @@ export default function FileExplorer({ onFileSelect }: FileExplorerProps) {
     return <File className="github-gray" size={16} />;
   };
 
+  const handleCreateFile = () => {
+    if (newFileName.trim()) {
+      createFileMutation.mutate({
+        projectId,
+        path: newFileName.trim(),
+        content: "",
+        isDirectory: false,
+      });
+    }
+  };
+
+  const handleCreateFolder = () => {
+    const folderName = prompt("Enter folder name:");
+    if (folderName?.trim()) {
+      createFileMutation.mutate({
+        projectId,
+        path: folderName.trim(),
+        content: "",
+        isDirectory: true,
+      });
+    }
+  };
+
   const renderFileTree = (files: any[], parentPath: string = "", depth: number = 0) => {
     const currentLevelFiles = files.filter(file => {
-      const pathParts = file.path.split('/');
-      const expectedDepth = pathParts.length - 1;
-      return expectedDepth === depth && file.path.startsWith(parentPath);
+      if (parentPath === "") {
+        // Root level - show files that don't contain '/' or are top-level folders
+        return !file.path.includes('/') || (file.isDirectory && !file.path.includes('/'));
+      }
+      // For nested files, check if they are direct children of parentPath
+      const relativePath = file.path.startsWith(parentPath) ? file.path.slice(parentPath.length) : "";
+      return relativePath && !relativePath.includes('/') && file.path.startsWith(parentPath);
     });
 
     return currentLevelFiles.map(file => {
@@ -107,13 +148,31 @@ export default function FileExplorer({ onFileSelect }: FileExplorerProps) {
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-white">EXPLORER</span>
           <div className="flex space-x-1">
-            <Button variant="ghost" size="sm" className="p-1 h-6 w-6 text-github-gray hover:text-white">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="p-1 h-6 w-6 text-github-gray hover:text-white"
+              onClick={() => setIsCreatingFile(true)}
+              title="New File"
+            >
               <FilePlus size={12} />
             </Button>
-            <Button variant="ghost" size="sm" className="p-1 h-6 w-6 text-github-gray hover:text-white">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="p-1 h-6 w-6 text-github-gray hover:text-white"
+              onClick={handleCreateFolder}
+              title="New Folder"
+            >
               <FolderPlus size={12} />
             </Button>
-            <Button variant="ghost" size="sm" className="p-1 h-6 w-6 text-github-gray hover:text-white">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="p-1 h-6 w-6 text-github-gray hover:text-white"
+              onClick={() => refetch()}
+              title="Refresh"
+            >
               <RotateCcw size={12} />
             </Button>
           </div>
@@ -122,7 +181,34 @@ export default function FileExplorer({ onFileSelect }: FileExplorerProps) {
       
       {/* File Tree */}
       <div className="flex-1 overflow-y-auto p-2">
-        {renderFileTree(mockFiles)}
+        {isLoading ? (
+          <div className="text-sm text-gray-400 p-2">Loading files...</div>
+        ) : (
+          <>
+            {renderFileTree(files)}
+            {isCreatingFile && (
+              <div className="flex items-center space-x-1 py-1 px-2 mt-1">
+                <File className="github-gray" size={16} />
+                <input
+                  type="text"
+                  value={newFileName}
+                  onChange={(e) => setNewFileName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleCreateFile();
+                    } else if (e.key === "Escape") {
+                      setIsCreatingFile(false);
+                      setNewFileName("");
+                    }
+                  }}
+                  className="text-sm bg-transparent border-none outline-none text-white flex-1"
+                  placeholder="Enter file name"
+                  autoFocus
+                />
+              </div>
+            )}
+          </>
+        )}
       </div>
       
       {/* Sidebar Tabs */}
