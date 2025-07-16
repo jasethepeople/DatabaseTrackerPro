@@ -188,6 +188,46 @@ export const apiPermissions = pgTable("api_permissions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const oauthStates = pgTable("oauth_states", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  state: text("state").notNull(),
+  providerId: text("provider_id").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const apiDiscovery = pgTable("api_discovery", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  apiId: text("api_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  baseUrl: text("base_url").notNull(),
+  authType: text("auth_type").notNull(), // 'api-key', 'oauth', 'bearer', 'basic'
+  signupUrl: text("signup_url"),
+  documentationUrl: text("documentation_url"),
+  category: text("category"),
+  confidence: integer("confidence").default(0), // AI confidence score 0-100
+  status: text("status").default("discovered"), // 'discovered', 'account_created', 'credentials_obtained'
+  aiMetadata: jsonb("ai_metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const accountCreationAttempts = pgTable("account_creation_attempts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  apiId: text("api_id").notNull(),
+  attemptType: text("attempt_type").notNull(), // 'automated', 'assisted', 'manual'
+  status: text("status").notNull(), // 'pending', 'success', 'failed', 'requires_verification'
+  steps: jsonb("steps").default([]),
+  result: jsonb("result"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
 // Insert schemas for new tables
 export const insertApiCredentialSchema = createInsertSchema(apiCredentials).omit({
   id: true,
@@ -218,6 +258,23 @@ export const insertApiPermissionSchema = createInsertSchema(apiPermissions).omit
   createdAt: true,
 });
 
+export const insertOauthStateSchema = createInsertSchema(oauthStates).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertApiDiscoverySchema = createInsertSchema(apiDiscovery).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAccountCreationAttemptSchema = createInsertSchema(accountCreationAttempts).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+});
+
 // Type exports for new tables
 export type ApiCredential = typeof apiCredentials.$inferSelect;
 export type InsertApiCredential = z.infer<typeof insertApiCredentialSchema>;
@@ -227,3 +284,9 @@ export type DataCache = typeof dataCache.$inferSelect;
 export type InsertDataCache = z.infer<typeof insertDataCacheSchema>;
 export type ApiPermission = typeof apiPermissions.$inferSelect;
 export type InsertApiPermission = z.infer<typeof insertApiPermissionSchema>;
+export type OauthState = typeof oauthStates.$inferSelect;
+export type InsertOauthState = z.infer<typeof insertOauthStateSchema>;
+export type ApiDiscovery = typeof apiDiscovery.$inferSelect;
+export type InsertApiDiscovery = z.infer<typeof insertApiDiscoverySchema>;
+export type AccountCreationAttempt = typeof accountCreationAttempts.$inferSelect;
+export type InsertAccountCreationAttempt = z.infer<typeof insertAccountCreationAttemptSchema>;

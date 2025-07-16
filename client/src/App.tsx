@@ -9,6 +9,7 @@ import Login from "./pages/login";
 import Register from "./pages/register";
 import Dashboard from "./pages/dashboard";
 import DataDashboard from "./pages/data-dashboard";
+import AIDiscovery from "./pages/ai-discovery";
 
 function Router() {
   const [user, setUser] = useState<any>(null);
@@ -52,6 +53,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/data" component={DataDashboard} />
+      <Route path="/ai-discovery" component={AIDiscovery} />
       <Route path="/" component={Dashboard} />
       <Route component={Dashboard} />
     </Switch>

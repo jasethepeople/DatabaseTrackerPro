@@ -539,6 +539,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI-Powered API Discovery endpoints
+  app.post('/api/ai/discover-apis', authenticateUser, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { query, category, features, useCase } = req.body;
+      
+      const { aiAPIDiscoveryService } = await import('./services/ai-api-discovery');
+      const discoveredAPIs = await aiAPIDiscoveryService.searchAPIs(userId, {
+        query,
+        category,
+        features,
+        useCase,
+      });
+      
+      res.json({ success: true, apis: discoveredAPIs });
+    } catch (error) {
+      console.error('API discovery error:', error);
+      res.status(500).json({ success: false, message: 'Failed to discover APIs' });
+    }
+  });
+
+  app.get('/api/ai/discovered-apis', authenticateUser, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { category } = req.query;
+      
+      const { aiAPIDiscoveryService } = await import('./services/ai-api-discovery');
+      const apis = await aiAPIDiscoveryService.getDiscoveredAPIs(userId, category as string);
+      
+      res.json({ success: true, apis });
+    } catch (error) {
+      console.error('Error fetching discovered APIs:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch discovered APIs' });
+    }
+  });
+
+  app.post('/api/ai/create-account/:apiId', authenticateUser, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { apiId } = req.params;
+      
+      const { aiAPIDiscoveryService } = await import('./services/ai-api-discovery');
+      const result = await aiAPIDiscoveryService.attemptAccountCreation(userId, apiId);
+      
+      res.json({ success: true, result });
+    } catch (error) {
+      console.error('Account creation error:', error);
+      res.status(500).json({ success: false, message: 'Failed to create account' });
+    }
+  });
+
+  // Credential Scanning endpoints
+  app.post('/api/ai/scan-credentials', authenticateUser, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { environment, platforms, autoExtract } = req.body;
+      
+      const { credentialScannerService } = await import('./services/credential-scanner');
+      const scanResult = await credentialScannerService.scanForCredentials(userId, {
+        environment: environment || 'all',
+        platforms,
+        autoExtract: autoExtract || false,
+      });
+      
+      res.json({ success: true, ...scanResult });
+    } catch (error) {
+      console.error('Credential scanning error:', error);
+      res.status(500).json({ success: false, message: 'Failed to scan credentials' });
+    }
+  });
+
+  app.get('/api/ai/credential-audit', authenticateUser, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      
+      const { credentialScannerService } = await import('./services/credential-scanner');
+      const audit = await credentialScannerService.performCredentialAudit(userId);
+      
+      res.json({ success: true, audit });
+    } catch (error) {
+      console.error('Credential audit error:', error);
+      res.status(500).json({ success: false, message: 'Failed to perform credential audit' });
+    }
+  });
+
+  // OAuth Management endpoints
+  app.get('/api/oauth/providers', async (req: any, res) => {
+    try {
+      const { oauthManager } = await import('./services/oauth-manager');
+      const providers = oauthManager.getAllProviders();
+      
+      res.json({ success: true, providers });
+    } catch (error) {
+      console.error('OAuth providers error:', error);
+      res.status(500).json({ success: false, message: 'Failed to get OAuth providers' });
+    }
+  });
+
+  app.post('/api/oauth/authorize/:providerId', authenticateUser, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { providerId } = req.params;
+      
+      const { oauthManager } = await import('./services/oauth-manager');
+      const { authUrl, state } = await oauthManager.generateAuthUrl(userId, providerId);
+      
+      res.json({ success: true, authUrl, state });
+    } catch (error) {
+      console.error('OAuth authorization error:', error);
+      res.status(500).json({ success: false, message: 'Failed to generate OAuth URL' });
+    }
+  });
+
+  app.get('/api/oauth/callback/:providerId', async (req: any, res) => {
+    try {
+      const { providerId } = req.params;
+      const { code, state } = req.query;
+      
+      if (!code || !state) {
+        return res.status(400).json({ success: false, message: 'Missing code or state' });
+      }
+      
+      const { oauthManager } = await import('./services/oauth-manager');
+      const result = await oauthManager.handleCallback(code as string, state as string);
+      
+      if (result.success) {
+        // Redirect to success page or dashboard
+        res.redirect('/data?oauth=success');
+      } else {
+        res.redirect(`/data?oauth=error&message=${encodeURIComponent(result.error || 'OAuth failed')}`);
+      }
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      res.redirect('/data?oauth=error&message=Internal+error');
+    }
+  });
+
   // Cache Management
   app.delete("/api/cache", authenticateUser, async (req: any, res) => {
     try {
