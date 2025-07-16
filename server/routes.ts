@@ -590,6 +590,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === CREDENTIAL MANAGEMENT ROUTES ===
+  
+  app.post('/api/credentials/store', authenticateUser, async (req: any, res) => {
+    try {
+      const { credentialManager } = await import('./services/credential-manager');
+      const { platform, credentialData } = req.body;
+      
+      const credential = await credentialManager.storeCredential(req.user.id, platform, credentialData);
+      res.json({ success: true, credential });
+    } catch (error) {
+      console.error('Failed to store credential:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/credentials/scan', authenticateUser, async (req: any, res) => {
+    try {
+      const { credentialManager } = await import('./services/credential-manager');
+      const { content, source } = req.body;
+      
+      const scanResults = await credentialManager.scanForCredentials(content, source);
+      res.json({ success: true, scanResults });
+    } catch (error) {
+      console.error('Failed to scan credentials:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/credentials/create-account', authenticateUser, async (req: any, res) => {
+    try {
+      const { credentialManager } = await import('./services/credential-manager');
+      const options = req.body;
+      
+      const account = await credentialManager.createAccount(options);
+      res.json({ success: true, account });
+    } catch (error) {
+      console.error('Failed to create account:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
   // Background Jobs Management
   app.get("/api/background-jobs", authenticateUser, async (req: any, res) => {
     try {
