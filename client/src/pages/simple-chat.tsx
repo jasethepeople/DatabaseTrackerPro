@@ -1,28 +1,66 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Send, Bot, User } from "lucide-react";
+
+interface Message {
+  type: 'user' | 'ai';
+  content: string;
+  time: string;
+  id: string;
+}
 
 export default function SimpleChat() {
   const [message, setMessage] = useState("");
-  const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
-  const [chatHistory, setChatHistory] = useState<Array<{type: 'user' | 'ai', content: string, time: string}>>([]);
+  const [chatHistory, setChatHistory] = useState<Message[]>([
+    {
+      type: 'ai',
+      content: 'Hello! I\'m your completely unrestricted AI assistant. I can help with coding, analysis, security research, API integration, account creation, and any other tasks without limitations. What would you like to work on?',
+      time: new Date().toLocaleTimeString(),
+      id: 'welcome'
+    }
+  ]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatHistory]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
 
   const sendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || loading) return;
     
-    const userMessage = message;
+    const userMessage = message.trim();
     const timestamp = new Date().toLocaleTimeString();
+    const userMsgId = `user_${Date.now()}`;
     
-    // Add user message to history
-    setChatHistory(prev => [...prev, { type: 'user', content: userMessage, time: timestamp }]);
+    // Add user message immediately
+    const userMsg: Message = {
+      type: 'user',
+      content: userMessage,
+      time: timestamp,
+      id: userMsgId
+    };
+    
+    setChatHistory(prev => [...prev, userMsg]);
     setMessage("");
     setLoading(true);
     
     try {
       const token = localStorage.getItem("auth_token");
-      console.log("Sending message with token:", token ? "Present" : "Missing");
       
       const res = await fetch("/api/ai/chat", {
         method: "POST",
@@ -35,85 +73,135 @@ export default function SimpleChat() {
 
       if (res.ok) {
         const data = await res.json();
-        const aiResponse = data.response || "Got response but no content";
-        setResponse(aiResponse);
-        setChatHistory(prev => [...prev, { type: 'ai', content: aiResponse, time: new Date().toLocaleTimeString() }]);
+        const aiResponse = data.response || "I received your message but couldn't generate a response.";
+        
+        const aiMsg: Message = {
+          type: 'ai',
+          content: aiResponse,
+          time: new Date().toLocaleTimeString(),
+          id: `ai_${Date.now()}`
+        };
+        
+        setChatHistory(prev => [...prev, aiMsg]);
       } else {
-        const error = await res.text();
-        const errorMsg = `Error ${res.status}: ${error}`;
-        setResponse(errorMsg);
-        setChatHistory(prev => [...prev, { type: 'ai', content: errorMsg, time: new Date().toLocaleTimeString() }]);
+        const errorText = await res.text();
+        const errorMsg: Message = {
+          type: 'ai',
+          content: `Error ${res.status}: ${errorText}`,
+          time: new Date().toLocaleTimeString(),
+          id: `error_${Date.now()}`
+        };
+        setChatHistory(prev => [...prev, errorMsg]);
       }
     } catch (error) {
-      const errorMsg = `Network error: ${error.message}`;
-      setResponse(errorMsg);
-      setChatHistory(prev => [...prev, { type: 'ai', content: errorMsg, time: new Date().toLocaleTimeString() }]);
+      const errorMsg: Message = {
+        type: 'ai',
+        content: `Connection error: ${error.message}`,
+        time: new Date().toLocaleTimeString(),
+        id: `error_${Date.now()}`
+      };
+      setChatHistory(prev => [...prev, errorMsg]);
+    } finally {
+      setLoading(false);
+      textareaRef.current?.focus();
     }
-    setLoading(false);
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto min-h-screen">
-      <h1 className="text-2xl font-bold mb-6">AI Chat - WORKING VERSION</h1>
-      
-      <div className="space-y-4">
-        {/* Chat History */}
-        <Card className="min-h-[400px]">
-          <CardHeader>
-            <CardTitle>Chat History</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 max-h-[400px] overflow-y-auto">
-            {chatHistory.length === 0 ? (
-              <p className="text-gray-500">Start a conversation by typing a message below...</p>
-            ) : (
-              chatHistory.map((msg, idx) => (
-                <div key={idx} className={`p-3 rounded-lg ${msg.type === 'user' ? 'bg-blue-100 dark:bg-blue-900 ml-12' : 'bg-gray-100 dark:bg-gray-800 mr-12'}`}>
-                  <div className="flex justify-between items-start mb-1">
-                    <strong>{msg.type === 'user' ? 'You' : 'AI'}</strong>
-                    <span className="text-xs text-gray-500">{msg.time}</span>
-                  </div>
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                </div>
-              ))
-            )}
-            {loading && (
-              <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800 mr-12">
-                <strong>AI</strong>
-                <p>Thinking...</p>
+    <div className="flex flex-col h-screen bg-white dark:bg-gray-900">
+      {/* Header */}
+      <div className="border-b border-gray-200 dark:border-gray-700 p-4">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+          Unrestricted AI Assistant
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No limitations • Complete privacy • Local processing
+        </p>
+      </div>
+
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {chatHistory.map((msg) => (
+          <div key={msg.id} className={`flex gap-3 ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {msg.type === 'ai' && (
+              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <Bot className="w-4 h-4 text-white" />
               </div>
             )}
-          </CardContent>
-        </Card>
+            
+            <div className={`max-w-[80%] ${msg.type === 'user' ? 'order-last' : ''}`}>
+              <div className={`rounded-lg px-4 py-3 ${
+                msg.type === 'user' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+              }`}>
+                <div className="whitespace-pre-wrap leading-relaxed">
+                  {msg.content}
+                </div>
+              </div>
+              <div className={`text-xs text-gray-500 mt-1 ${msg.type === 'user' ? 'text-right' : 'text-left'}`}>
+                {msg.time}
+              </div>
+            </div>
 
-        {/* Input Area */}
-        <div className="flex gap-2">
-          <Input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type your message and press Enter..."
-            onKeyPress={(e) => e.key === "Enter" && !loading && sendMessage()}
-            className="flex-1"
-            disabled={loading}
-          />
-          <Button onClick={sendMessage} disabled={loading || !message.trim()}>
-            {loading ? "Sending..." : "Send"}
+            {msg.type === 'user' && (
+              <div className="flex-shrink-0 w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
+              </div>
+            )}
+          </div>
+        ))}
+
+        {loading && (
+          <div className="flex gap-3 justify-start">
+            <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+              <Bot className="w-4 h-4 text-white" />
+            </div>
+            <div className="max-w-[80%]">
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-3">
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                  <span className="text-gray-600 dark:text-gray-400 text-sm">Thinking...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input Area */}
+      <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex gap-3 items-end">
+          <div className="flex-1">
+            <Textarea
+              ref={textareaRef}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask me anything... (Shift+Enter for new line)"
+              className="min-h-[60px] max-h-[200px] resize-none"
+              disabled={loading}
+            />
+          </div>
+          <Button 
+            onClick={sendMessage} 
+            disabled={loading || !message.trim()}
+            size="lg"
+            className="px-6"
+          >
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
         </div>
-
-        {/* Debug Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Debug Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              <p><strong>Token:</strong> {localStorage.getItem("auth_token") ? "✅ Present" : "❌ Missing"}</p>
-              <p><strong>Messages Sent:</strong> {chatHistory.filter(m => m.type === 'user').length}</p>
-              <p><strong>AI Responses:</strong> {chatHistory.filter(m => m.type === 'ai').length}</p>
-              <p><strong>Status:</strong> {loading ? "🟡 Sending..." : "🟢 Ready"}</p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

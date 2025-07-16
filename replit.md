@@ -6,7 +6,10 @@ This is a full-stack development environment application built to replicate Repl
 
 ## User Preferences
 
-Preferred communication style: Simple, everyday language.
+- **Communication style**: Simple, everyday language
+- **Application requirements**: 100% unrestricted and unbiased standalone application
+- **Development approach**: Systematic feature-by-feature implementation ensuring 100% functionality before proceeding
+- **Deployment target**: Standalone application for local computer use
 
 ## System Architecture
 
