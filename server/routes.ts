@@ -428,69 +428,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // API Credentials Management
-  app.get("/api/credentials", authenticateUser, async (req: any, res) => {
+  // === ADVANCED CREDENTIAL MANAGEMENT ROUTES ===
+  
+  app.get('/api/credentials/stats', authenticateUser, async (req: any, res) => {
     try {
-      const credentials = await credentialManager.getUserCredentials(req.user.id);
-      // Don't expose encrypted keys in the response
-      const safeCredentials = credentials.map(cred => ({
-        id: cred.id,
-        apiId: cred.apiId,
-        name: cred.name,
-        isActive: cred.isActive,
-        permissions: cred.permissions,
-        lastUsed: cred.lastUsed,
-        createdAt: cred.createdAt
-      }));
-      res.json({ success: true, credentials: safeCredentials });
+      const { credentialManager } = await import('./services/credential-manager');
+      const stats = await credentialManager.getCredentialStats(req.user.id);
+      res.json({ success: true, stats });
     } catch (error) {
-      console.error('Error fetching credentials:', error);
-      res.status(500).json({ success: false, message: 'Failed to fetch credentials' });
+      console.error('Failed to get credential stats:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
-  app.post("/api/credentials", authenticateUser, async (req: any, res) => {
+  app.get('/api/credentials/:platform', authenticateUser, async (req: any, res) => {
     try {
-      const credentialData = insertApiCredentialSchema.parse({
-        ...req.body,
-        userId: req.user.id
+      const { credentialManager } = await import('./services/credential-manager');
+      const credentials = await credentialManager.getCredentials(req.user.id, req.params.platform);
+      res.json({ success: true, credentials });
+    } catch (error) {
+      console.error('Failed to get platform credentials:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/credentials/store', authenticateUser, async (req: any, res) => {
+    try {
+      const { credentialManager } = await import('./services/credential-manager');
+      const credential = await credentialManager.storeCredential(req.user.id, req.body.platform, req.body.credentialData);
+      res.json({ success: true, credential });
+    } catch (error) {
+      console.error('Failed to store credential:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/credentials/scan', authenticateUser, async (req: any, res) => {
+    try {
+      const { credentialManager } = await import('./services/credential-manager');
+      const { content, source } = req.body;
+      
+      const scanResults = await credentialManager.scanForCredentials(content, source);
+      const storedCredentials = await credentialManager.autoStoreFoundCredentials(req.user.id, scanResults);
+      
+      res.json({ 
+        success: true, 
+        scanResults, 
+        stored: storedCredentials.length,
+        credentials: storedCredentials 
       });
+    } catch (error) {
+      console.error('Failed to scan for credentials:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  // === AUTOMATED ACCOUNT CREATION ROUTES ===
+  
+  app.post('/api/accounts/create', authenticateUser, async (req: any, res) => {
+    try {
+      const { credentialManager } = await import('./services/credential-manager');
+      const result = await credentialManager.createAccount(req.body);
+      res.json(result);
+    } catch (error) {
+      console.error('Failed to create account:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  // === AUTOMATED TESTING ROUTES ===
+  
+  app.post('/api/testing/generate', authenticateUser, async (req: any, res) => {
+    try {
+      const { automatedTestingService } = await import('./services/automated-testing-service');
+      const { projectPath = './', options } = req.body;
       
-      const credential = await credentialManager.storeCredential(credentialData);
+      const result = await automatedTestingService.generateTestSuite(projectPath, options);
+      res.json(result);
+    } catch (error) {
+      console.error('Failed to generate tests:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/testing/run', authenticateUser, async (req: any, res) => {
+    try {
+      const { automatedTestingService } = await import('./services/automated-testing-service');
+      const { projectPath = './', options } = req.body;
       
-      // Don't expose encrypted keys in response
-      const safeCredential = {
-        id: credential.id,
-        apiId: credential.apiId,
-        name: credential.name,
-        isActive: credential.isActive,
-        permissions: credential.permissions,
-        createdAt: credential.createdAt
+      const testResult = await automatedTestingService.runTests(projectPath, options);
+      res.json({ success: true, result: testResult });
+    } catch (error) {
+      console.error('Failed to run tests:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/testing/debug', authenticateUser, async (req: any, res) => {
+    try {
+      const { automatedTestingService } = await import('./services/automated-testing-service');
+      const { projectPath = './' } = req.body;
+      
+      const debugResult = await automatedTestingService.debugProject(projectPath);
+      res.json({ success: true, debug: debugResult });
+    } catch (error) {
+      console.error('Failed to debug project:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  // === COMPREHENSIVE PROMPT TESTING ROUTES ===
+  
+  app.post('/api/testing/run-all-prompts', authenticateUser, async (req: any, res) => {
+    try {
+      const { promptTestingService } = await import('./services/prompt-testing-service');
+      console.log('🧪 Starting comprehensive prompt testing...');
+      
+      const results = await promptTestingService.runAllPrompts();
+      
+      res.json({ 
+        success: true, 
+        testing: results,
+        readyForDeployment: results.totalScore >= 90 && results.passedCount >= 14
+      });
+    } catch (error) {
+      console.error('Failed to run prompt tests:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/testing/deployment-readiness', authenticateUser, async (req: any, res) => {
+    try {
+      // Check all system components
+      const { credentialManager } = await import('./services/credential-manager');
+      const { automatedTestingService } = await import('./services/automated-testing-service');
+      
+      await credentialManager.initialize();
+      await automatedTestingService.initialize();
+      
+      // Get system status
+      const credentialStats = await credentialManager.getCredentialStats(req.user.id);
+      
+      const readinessCheck = {
+        credentialManager: true,
+        testingService: true,
+        credentialCount: credentialStats.total,
+        autoGenerated: credentialStats.autoGenerated,
+        systemReady: credentialStats.total > 0
       };
-      
-      res.json({ success: true, credential: safeCredential });
-    } catch (error) {
-      console.error('Error storing credential:', error);
-      res.status(400).json({ 
-        success: false, 
-        message: error instanceof Error ? error.message : 'Failed to store credential' 
-      });
-    }
-  });
 
-  app.delete("/api/credentials/:id", authenticateUser, async (req: any, res) => {
-    try {
-      const credentialId = parseInt(req.params.id);
-      const success = await credentialManager.deleteCredential(req.user.id, credentialId);
-      
-      if (success) {
-        res.json({ success: true, message: 'Credential deleted successfully' });
-      } else {
-        res.status(404).json({ success: false, message: 'Credential not found' });
-      }
+      res.json({ 
+        success: true, 
+        readiness: readinessCheck,
+        recommendation: readinessCheck.systemReady ? 
+          'System is ready for comprehensive testing and deployment' : 
+          'Please add credentials and run tests before deployment'
+      });
     } catch (error) {
-      console.error('Error deleting credential:', error);
-      res.status(500).json({ success: false, message: 'Failed to delete credential' });
+      console.error('Failed to check deployment readiness:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
