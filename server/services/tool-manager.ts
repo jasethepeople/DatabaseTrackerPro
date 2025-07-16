@@ -89,7 +89,15 @@ class ToolManagerImpl implements ToolManager {
   }
 
   async getAvailableTools(): Promise<Tool[]> {
-    return await storage.getTools();
+    try {
+      console.log('ToolManager: Getting available tools...');
+      const tools = await storage.getTools();
+      console.log(`ToolManager: Retrieved ${tools.length} tools`);
+      return tools;
+    } catch (error) {
+      console.error('ToolManager: Error getting tools:', error);
+      throw error;
+    }
   }
 
   async createTool(tool: InsertTool): Promise<Tool> {

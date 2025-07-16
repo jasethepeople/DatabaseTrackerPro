@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import { eq, and } from "drizzle-orm";
 import {
   users, projects, files, vms, tools, userTools, services,
@@ -8,8 +8,18 @@ import {
   type UserTool, type Service, type InsertService
 } from "@shared/schema";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const db = drizzle(pool);
+// Database connection with error handling - using HTTP mode for better reliability
+const createDbConnection = () => {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+  
+  const sql = neon(connectionString);
+  return drizzle(sql);
+};
+
+const db = createDbConnection();
 
 export interface IStorage {
   // User management
@@ -171,7 +181,14 @@ export class DbStorage implements IStorage {
   }
 
   async getTools(): Promise<Tool[]> {
-    return await db.select().from(tools);
+    try {
+      const result = await db.select().from(tools);
+      console.log(`Storage: Found ${result.length} tools`);
+      return result;
+    } catch (error) {
+      console.error('Storage: Error fetching tools:', error);
+      throw error;
+    }
   }
 
   async getToolsByCategory(category: string): Promise<Tool[]> {
