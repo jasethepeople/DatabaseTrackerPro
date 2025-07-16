@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,23 +27,34 @@ export default function AIChat() {
   ]);
   const [input, setInput] = useState("");
 
+  // Debug authentication
+  React.useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    console.log("Auth token present:", !!token);
+    if (token) {
+      console.log("Token prefix:", token.substring(0, 20));
+    }
+  }, []);
+
   const sendMessage = useMutation({
     mutationFn: async (message: string) => {
-      return await apiRequest("/api/ai/chat", "POST", { message });
+      const response = await apiRequest("POST", "/api/ai/chat", { message });
+      return await response.json();
     },
-    onSuccess: (response) => {
+    onSuccess: (data) => {
       const newMessage: Message = {
         id: Date.now().toString(),
-        content: response.response || "I'm working on that for you!",
+        content: data.response || "I'm working on that for you!",
         role: "assistant",
         timestamp: new Date()
       };
       setMessages(prev => [...prev, newMessage]);
     },
     onError: (error) => {
+      console.error("Chat error:", error);
       const errorMessage: Message = {
         id: Date.now().toString(),
-        content: "Sorry, I'm having trouble connecting right now. Please check if you have any API keys configured for AI services.",
+        content: `Connection error: ${error.message}. Please try refreshing the page or logging in again.`,
         role: "assistant",
         timestamp: new Date()
       };
