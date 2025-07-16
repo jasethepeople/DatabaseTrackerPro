@@ -45,11 +45,11 @@ export default function MainDashboard() {
     },
     {
       title: "AI Discovery",
-      description: "Discover and integrate external APIs automatically",
+      description: "Automatic API key generation and external API integration",
       icon: Search,
       path: "/ai-discovery",
       color: "bg-purple-500",
-      status: "Active"
+      status: "Auto Key Gen Ready"
     },
     {
       title: "Autonomous Learning",

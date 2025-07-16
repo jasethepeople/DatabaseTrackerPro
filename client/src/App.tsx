@@ -16,6 +16,7 @@ import EnvironmentSnapshots from "./pages/environment-snapshots";
 import AIChat from "./pages/ai-chat";
 import CodeSnippets from "./pages/code-snippets";
 import DemoCodeSnippets from "./pages/demo-code-snippets";
+import AnthropicKeyDemo from "./pages/anthropic-key-demo";
 import MainDashboard from "./pages/main-dashboard";
 import { Navigation } from "./components/navigation";
 import NotFound from "./pages/not-found";
@@ -67,6 +68,7 @@ function Router() {
           <Route path="/chat" component={AIChat} />
           <Route path="/code-snippets" component={CodeSnippets} />
           <Route path="/demo-snippets" component={DemoCodeSnippets} />
+          <Route path="/anthropic-demo" component={AnthropicKeyDemo} />
           <Route path="/data" component={DataDashboard} />
           <Route path="/ai-discovery" component={AIDiscovery} />
           <Route path="/autonomous-learning" component={AutonomousLearning} />

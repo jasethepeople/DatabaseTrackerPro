@@ -9,7 +9,8 @@ import {
   Camera,
   LogOut,
   LayoutDashboard,
-  Code
+  Code,
+  Key
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 
@@ -24,7 +25,8 @@ export function Navigation() {
   const navItems = [
     { path: "/", label: "Dashboard", icon: LayoutDashboard },
     { path: "/chat", label: "AI Chat", icon: Bot },
-    { path: "/code-snippets", label: "Code Snippets", icon: Code },
+    { path: "/demo-snippets", label: "Code Snippets", icon: Code },
+    { path: "/anthropic-demo", label: "API Key Gen", icon: Key },
     { path: "/data", label: "Data Dashboard", icon: Database },
     { path: "/ai-discovery", label: "AI Discovery", icon: Search },
     { path: "/autonomous-learning", label: "Learning", icon: Brain },
