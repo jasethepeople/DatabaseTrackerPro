@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+
+  /* GitHub-style dark theme colors */
+  --github-dark: hsl(221, 39%, 11%);
+  --github-surface: hsl(220, 13%, 18%);
+  --github-elevated: hsl(215, 28%, 17%);
+  --github-blue: hsl(213, 94%, 68%);
+  --github-gray: hsl(217, 10%, 64%);
+  --success: hsl(137, 55%, 36%);
+  --warning: hsl(35, 100%, 50%);
+  --danger: hsl(4, 90%, 58%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased;
+    background-color: var(--github-dark);
+    color: white;
+  }
+
+  .github-surface {
+    background-color: var(--github-surface);
+  }
+
+  .github-elevated {
+    background-color: var(--github-elevated);
+  }
+
+  .github-blue {
+    color: var(--github-blue);
+  }
+
+  .github-gray {
+    color: var(--github-gray);
+  }
+
+  .terminal {
+    background-color: hsl(240, 3%, 12%);
+    color: hsl(0, 0%, 83%);
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+  }
+
+  .code-editor {
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .sidebar-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .tab-active {
+    border-bottom: 2px solid var(--github-blue);
+  }
+}
