@@ -14,6 +14,7 @@ import AutonomousLearning from "./pages/autonomous-learning";
 import TestingDashboard from "./pages/testing-dashboard";
 import EnvironmentSnapshots from "./pages/environment-snapshots";
 import AIChat from "./pages/ai-chat";
+import MainDashboard from "./pages/main-dashboard";
 import { Navigation } from "./components/navigation";
 import NotFound from "./pages/not-found";
 
@@ -67,7 +68,8 @@ function Router() {
           <Route path="/autonomous-learning" component={AutonomousLearning} />
           <Route path="/testing" component={TestingDashboard} />
           <Route path="/snapshots" component={EnvironmentSnapshots} />
-          <Route path="/" component={AIChat} />
+          <Route path="/ide" component={Dashboard} />
+          <Route path="/" component={MainDashboard} />
           <Route component={NotFound} />
         </Switch>
       </main>

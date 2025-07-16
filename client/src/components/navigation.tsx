@@ -7,7 +7,8 @@ import {
   Brain, 
   TestTube,
   Camera,
-  LogOut
+  LogOut,
+  LayoutDashboard
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 
@@ -20,6 +21,7 @@ export function Navigation() {
   };
 
   const navItems = [
+    { path: "/", label: "Dashboard", icon: LayoutDashboard },
     { path: "/chat", label: "AI Chat", icon: Bot },
     { path: "/data", label: "Data Dashboard", icon: Database },
     { path: "/ai-discovery", label: "AI Discovery", icon: Search },
