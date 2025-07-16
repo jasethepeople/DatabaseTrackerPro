@@ -52,7 +52,10 @@ export const auth = {
 
   async getCurrentUser() {
     const token = this.getToken();
-    if (!token) return null;
+    if (!token) {
+      console.log("No token found");
+      return null;
+    }
 
     try {
       const response = await fetch("/api/auth/me", {
@@ -62,12 +65,16 @@ export const auth = {
       });
 
       if (!response.ok) {
+        console.log("Auth me failed:", response.status);
         this.logout();
         return null;
       }
 
-      return await response.json();
+      const user = await response.json();
+      console.log("getCurrentUser returning:", user);
+      return user;
     } catch (error) {
+      console.error("getCurrentUser error:", error);
       this.logout();
       return null;
     }

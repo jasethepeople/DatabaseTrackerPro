@@ -17,9 +17,11 @@ function Router() {
     const checkAuth = async () => {
       try {
         const currentUser = await auth.getCurrentUser();
+        console.log("Current user:", currentUser);
         setUser(currentUser);
       } catch (error) {
         console.error("Auth check failed:", error);
+        setUser(null);
       } finally {
         setLoading(false);
       }
