@@ -18,6 +18,8 @@ import CodeSnippets from "./pages/code-snippets";
 import DemoCodeSnippets from "./pages/demo-code-snippets";
 import AnthropicKeyDemo from "./pages/anthropic-key-demo";
 import MainDashboard from "./pages/main-dashboard";
+import SecurityFramework from "./pages/security-framework";
+import CodeRefactoring from "./pages/code-refactoring";
 import { Navigation } from "./components/navigation";
 import NotFound from "./pages/not-found";
 
@@ -74,6 +76,8 @@ function Router() {
           <Route path="/autonomous-learning" component={AutonomousLearning} />
           <Route path="/testing" component={TestingDashboard} />
           <Route path="/snapshots" component={EnvironmentSnapshots} />
+          <Route path="/security-framework" component={SecurityFramework} />
+          <Route path="/code-refactoring" component={CodeRefactoring} />
           <Route path="/ide" component={Dashboard} />
           <Route path="/" component={MainDashboard} />
           <Route component={NotFound} />

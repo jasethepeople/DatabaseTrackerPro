@@ -10,7 +10,9 @@ import {
   LogOut,
   LayoutDashboard,
   Code,
-  Key
+  Key,
+  Shield,
+  Wrench
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 
@@ -32,6 +34,8 @@ export function Navigation() {
     { path: "/autonomous-learning", label: "Learning", icon: Brain },
     { path: "/testing", label: "Testing", icon: TestTube },
     { path: "/snapshots", label: "Snapshots", icon: Camera },
+    { path: "/security-framework", label: "Security", icon: Shield },
+    { path: "/code-refactoring", label: "Refactor", icon: Wrench },
   ];
 
   return (
