@@ -20,8 +20,6 @@ function Router() {
         setUser(currentUser);
       } catch (error) {
         console.error("Auth check failed:", error);
-        // For demo purposes, set a mock user if authentication fails
-        setUser({ id: 1, username: "demo", email: "demo@example.com" });
       } finally {
         setLoading(false);
       }
