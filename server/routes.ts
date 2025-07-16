@@ -16,6 +16,8 @@ import { backgroundJobScheduler } from "./services/background-job-scheduler";
 import { dataAccessManager } from "./services/data-access-manager";
 import { environmentSnapshotService } from "./services/environment-snapshot-service";
 import { securityFrameworkService } from "./services/security-framework-service";
+import { debugSandbox } from './services/debug-sandbox';
+import { selfRepairService } from './services/self-repair-service';
 
 // Middleware to verify auth token
 async function authenticateUser(req: any, res: any, next: any) {
@@ -1445,6 +1447,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error rating code snippet:", error);
       res.status(500).json({ error: "Failed to rate code snippet" });
+    }
+  });
+
+  // Debug Sandbox and Self-Repair Routes
+  app.post('/api/debug/create-session', authenticateUser, async (req, res) => {
+    try {
+      const { issue } = req.body;
+      const sessionId = await debugSandbox.createDebugSession(issue);
+      res.json({ success: true, sessionId });
+    } catch (error) {
+      console.error('Failed to create debug session:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/debug/run-session/:sessionId', authenticateUser, async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const session = await debugSandbox.runDebugSession(sessionId);
+      res.json({ success: true, session });
+    } catch (error) {
+      console.error('Failed to run debug session:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/debug/sessions', authenticateUser, async (req, res) => {
+    try {
+      const sessions = await debugSandbox.getActiveSessions();
+      res.json({ success: true, sessions });
+    } catch (error) {
+      console.error('Failed to get debug sessions:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/debug/debug-issue', authenticateUser, async (req, res) => {
+    try {
+      const { issue } = req.body;
+      const session = await debugSandbox.debugIssue(issue);
+      res.json({ success: true, session });
+    } catch (error) {
+      console.error('Failed to debug issue:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/debug/ai-knowledge', authenticateUser, async (req, res) => {
+    try {
+      const knowledge = await debugSandbox.getAIKnowledge();
+      const knowledgeArray = Array.from(knowledge.entries()).map(([key, value]) => ({
+        issueKey: key,
+        ...value
+      }));
+      res.json({ success: true, knowledge: knowledgeArray });
+    } catch (error) {
+      console.error('Failed to get AI knowledge:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/repair/force-repair', authenticateUser, async (req, res) => {
+    try {
+      const { issue } = req.body;
+      const success = await selfRepairService.forceRepair(issue);
+      res.json({ success, message: success ? 'Repair completed' : 'Repair failed' });
+    } catch (error) {
+      console.error('Force repair failed:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/repair/system-status', authenticateUser, async (req, res) => {
+    try {
+      const status = await selfRepairService.getSystemStatus();
+      res.json({ success: true, status });
+    } catch (error) {
+      console.error('Failed to get system status:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/repair/history', authenticateUser, async (req, res) => {
+    try {
+      const history = await selfRepairService.getRepairHistory();
+      res.json({ success: true, history });
+    } catch (error) {
+      console.error('Failed to get repair history:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/repair/knowledge-base-size', authenticateUser, async (req, res) => {
+    try {
+      const size = await selfRepairService.getKnowledgeBaseSize();
+      res.json({ success: true, size });
+    } catch (error) {
+      console.error('Failed to get knowledge base size:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  // File Explorer Routes (Based on screenshot requirements)
+  app.get('/api/files/structure', authenticateUser, async (req: any, res) => {
+    try {
+      const files = await fileManager.getProjectStructure(req.user.id);
+      res.json({ success: true, files });
+    } catch (error) {
+      console.error('Failed to get file structure:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/files/create', authenticateUser, async (req: any, res) => {
+    try {
+      const { name, type, path, content } = req.body;
+      const file = await fileManager.createFile(req.user.id, { name, type, path, content });
+      res.json({ success: true, file });
+    } catch (error) {
+      console.error('Failed to create file:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.delete('/api/files/delete', authenticateUser, async (req: any, res) => {
+    try {
+      const { path } = req.body;
+      await fileManager.deleteFile(req.user.id, path);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Failed to delete file:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/files/save', authenticateUser, async (req: any, res) => {
+    try {
+      const { path, content } = req.body;
+      await fileManager.saveFile(req.user.id, path, content);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Failed to save file:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 

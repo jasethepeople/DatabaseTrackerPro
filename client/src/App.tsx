@@ -20,6 +20,8 @@ import AnthropicKeyDemo from "./pages/anthropic-key-demo";
 import MainDashboard from "./pages/main-dashboard";
 import SecurityFramework from "./pages/security-framework";
 import CodeRefactoring from "./pages/code-refactoring";
+import FileExplorer from "./pages/file-explorer";
+import DebugDashboard from "./pages/debug-dashboard";
 import { Navigation } from "./components/navigation";
 import NotFound from "./pages/not-found";
 
@@ -78,6 +80,8 @@ function Router() {
           <Route path="/snapshots" component={EnvironmentSnapshots} />
           <Route path="/security-framework" component={SecurityFramework} />
           <Route path="/code-refactoring" component={CodeRefactoring} />
+          <Route path="/file-explorer" component={FileExplorer} />
+          <Route path="/debug-dashboard" component={DebugDashboard} />
           <Route path="/ide" component={Dashboard} />
           <Route path="/" component={MainDashboard} />
           <Route component={NotFound} />
