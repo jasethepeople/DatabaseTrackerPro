@@ -631,6 +631,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === DEPLOYMENT ROUTES ===
+  
+  app.post('/api/deployment/heroku', authenticateUser, async (req: any, res) => {
+    try {
+      const { deploymentService } = await import('./services/deployment-service');
+      await deploymentService.initialize();
+      
+      const result = await deploymentService.deployToHeroku(req.body);
+      res.json({ success: true, deployment: result });
+    } catch (error) {
+      console.error('Failed to deploy to Heroku:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/deployment/vercel', authenticateUser, async (req: any, res) => {
+    try {
+      const { deploymentService } = await import('./services/deployment-service');
+      await deploymentService.initialize();
+      
+      const result = await deploymentService.deployToVercel(req.body);
+      res.json({ success: true, deployment: result });
+    } catch (error) {
+      console.error('Failed to deploy to Vercel:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/deployment/aws', authenticateUser, async (req: any, res) => {
+    try {
+      const { deploymentService } = await import('./services/deployment-service');
+      await deploymentService.initialize();
+      
+      const result = await deploymentService.deployToAWS(req.body);
+      res.json({ success: true, deployment: result });
+    } catch (error) {
+      console.error('Failed to deploy to AWS:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/deployment/docker', authenticateUser, async (req: any, res) => {
+    try {
+      const { deploymentService } = await import('./services/deployment-service');
+      await deploymentService.initialize();
+      
+      const result = await deploymentService.deployWithDocker(req.body);
+      res.json({ success: true, deployment: result });
+    } catch (error) {
+      console.error('Failed to deploy with Docker:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/deployment/multi-platform', authenticateUser, async (req: any, res) => {
+    try {
+      const { deploymentService } = await import('./services/deployment-service');
+      await deploymentService.initialize();
+      
+      const results = await deploymentService.deployToMultiplePlatforms(req.body.targets);
+      res.json({ success: true, deployments: results });
+    } catch (error) {
+      console.error('Failed to deploy to multiple platforms:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/deployment/test-comprehensive', authenticateUser, async (req: any, res) => {
+    try {
+      const { deploymentService } = await import('./services/deployment-service');
+      await deploymentService.initialize();
+      
+      const testResults = await deploymentService.performComprehensiveDeploymentTest();
+      res.json({ success: true, testing: testResults });
+    } catch (error) {
+      console.error('Failed to run deployment tests:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/deployment/status/:deploymentId', authenticateUser, async (req: any, res) => {
+    try {
+      const { deploymentService } = await import('./services/deployment-service');
+      await deploymentService.initialize();
+      
+      const status = await deploymentService.getDeploymentStatus(req.params.deploymentId);
+      if (status) {
+        res.json({ success: true, status });
+      } else {
+        res.status(404).json({ success: false, error: 'Deployment not found' });
+      }
+    } catch (error) {
+      console.error('Failed to get deployment status:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/deployment/list', authenticateUser, async (req: any, res) => {
+    try {
+      const { deploymentService } = await import('./services/deployment-service');
+      await deploymentService.initialize();
+      
+      const deployments = await deploymentService.getAllDeployments();
+      res.json({ success: true, deployments });
+    } catch (error) {
+      console.error('Failed to list deployments:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
   // Background Jobs Management
   app.get("/api/background-jobs", authenticateUser, async (req: any, res) => {
     try {

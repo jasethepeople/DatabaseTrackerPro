@@ -45,14 +45,15 @@ export class PromptTestingService {
       this.testPrompt12_AdvancedAPIManagement,
       this.testPrompt13_EducationalContent,
       this.testPrompt14_ErrorHandlingRecovery,
-      this.testPrompt15_DependencyManagement
+      this.testPrompt15_DependencyManagement,
+      this.testPrompt16_DeploymentCapabilities
     ];
 
     this.testResults = [];
     
     for (let i = 0; i < prompts.length; i++) {
       const startTime = Date.now();
-      console.log(`📋 Testing Prompt ${i + 1}/15...`);
+      console.log(`📋 Testing Prompt ${i + 1}/16...`);
       
       try {
         const result = await prompts[i].call(this);
@@ -739,17 +740,107 @@ if __name__ == '__main__':
     return { title: 'Cross-Project Dependency Management', status: 'passed', score: 91, details: 'Analyzed dependencies and created reusable module', evidence: [] };
   }
 
+  private async testPrompt16_DeploymentCapabilities(): Promise<Omit<PromptTestResult, 'promptId' | 'duration' | 'timestamp'>> {
+    let score = 0;
+    const evidence: any[] = [];
+    
+    try {
+      console.log('🚀 Testing comprehensive deployment capabilities...');
+      
+      // Test individual platform deployments
+      const { deploymentService } = await import('./deployment-service');
+      await deploymentService.initialize();
+      
+      // Test Heroku deployment
+      const herokuResult = await deploymentService.deployToHeroku({
+        appName: 'test-heroku-app',
+        region: 'us',
+        buildpack: 'heroku/nodejs'
+      });
+      
+      if (herokuResult.success && herokuResult.url) {
+        evidence.push({ action: 'heroku_deployment', success: true, url: herokuResult.url });
+        score += 20;
+      }
+      
+      // Test Vercel deployment
+      const vercelResult = await deploymentService.deployToVercel({
+        projectName: 'test-vercel-project',
+        framework: 'nextjs'
+      });
+      
+      if (vercelResult.success && vercelResult.url) {
+        evidence.push({ action: 'vercel_deployment', success: true, url: vercelResult.url });
+        score += 20;
+      }
+      
+      // Test AWS deployment
+      const awsResult = await deploymentService.deployToAWS({
+        serviceName: 'test-aws-lambda',
+        region: 'us-east-1',
+        runtime: 'nodejs18.x'
+      });
+      
+      if (awsResult.success && awsResult.url) {
+        evidence.push({ action: 'aws_deployment', success: true, url: awsResult.url });
+        score += 20;
+      }
+      
+      // Test Docker deployment
+      const dockerResult = await deploymentService.deployWithDocker({
+        imageName: 'test-app',
+        port: 3000,
+        tag: 'latest'
+      });
+      
+      if (dockerResult.success && dockerResult.url) {
+        evidence.push({ action: 'docker_deployment', success: true, url: dockerResult.url });
+        score += 20;
+      }
+      
+      // Test comprehensive deployment testing
+      const comprehensiveTest = await deploymentService.performComprehensiveDeploymentTest();
+      
+      if (comprehensiveTest.overallSuccess && comprehensiveTest.successfulDeployments >= 3) {
+        evidence.push({ 
+          action: 'comprehensive_deployment_test', 
+          platforms: comprehensiveTest.platforms,
+          successRate: comprehensiveTest.successfulDeployments / comprehensiveTest.totalDeployments
+        });
+        score += 20;
+      }
+      
+      return {
+        title: 'Multi-Platform Deployment Capabilities',
+        status: score >= 75 ? 'passed' : 'failed',
+        score,
+        details: `Successfully deployed to ${evidence.length} platforms with comprehensive automation and monitoring`,
+        evidence
+      };
+      
+    } catch (error) {
+      return {
+        title: 'Multi-Platform Deployment Capabilities',
+        status: 'failed',
+        score,
+        details: `Failed: ${(error as Error).message}`,
+        evidence
+      };
+    }
+  }
+
   private generateSummary(totalScore: number, passedCount: number): string {
+    const totalTests = 16;
     if (totalScore >= 95) {
-      return `🏆 EXCEPTIONAL: ${passedCount}/15 prompts passed with ${totalScore}% average score. System demonstrates advanced AI capabilities across all domains.`;
+      return `🏆 EXCEPTIONAL: ${passedCount}/${totalTests} prompts passed with ${totalScore}% average score. System demonstrates advanced AI capabilities across all domains.`;
     } else if (totalScore >= 85) {
-      return `🥇 EXCELLENT: ${passedCount}/15 prompts passed with ${totalScore}% average score. Strong performance with minor areas for improvement.`;
+      return `🥇 EXCELLENT: ${passedCount}/${totalTests} prompts passed with ${totalScore}% average score. Strong performance with minor areas for improvement.`;
     } else if (totalScore >= 75) {
-      return `✅ GOOD: ${passedCount}/15 prompts passed with ${totalScore}% average score. Solid foundation with room for enhancement.`;
+      return `✅ GOOD: ${passedCount}/${totalTests} prompts passed with ${totalScore}% average score. Solid foundation with room for enhancement.`;
     } else if (totalScore >= 60) {
-      return `⚠️ PARTIAL: ${passedCount}/15 prompts passed with ${totalScore}% average score. Basic functionality present but needs significant improvement.`;
+      return `⚠️ PARTIAL: ${passedCount}/${totalTests} prompts passed with ${totalScore}% average score. Basic functionality present but needs significant improvement.`;
     } else {
-      return `❌ INSUFFICIENT: ${passedCount}/15 prompts passed with ${totalScore}% average score. Major issues require immediate attention.`;
+      return `❌ INSUFFICIENT: ${passedCount}/${totalTests} prompts passed with ${totalScore}% average score. Major issues require immediate attention.`;
     }
   }
 }

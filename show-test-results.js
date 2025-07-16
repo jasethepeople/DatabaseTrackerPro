@@ -15,10 +15,10 @@ async function getTestResults() {
   // Get test results
   const testResponse = await makeRequest('/api/testing/run-all-prompts', 'POST', JSON.stringify({}), token);
   
-  console.log('\n🎯 IMPROVED SYSTEM TEST RESULTS');
-  console.log('================================');
+  console.log('\n🎯 ENHANCED SYSTEM WITH DEPLOYMENT CAPABILITIES');
+  console.log('==============================================');
   console.log(`📊 Overall Score: ${testResponse.testing.totalScore}%`);
-  console.log(`✅ Passed Tests: ${testResponse.testing.passedCount}/15`);
+  console.log(`✅ Passed Tests: ${testResponse.testing.passedCount}/16`);
   console.log(`🏆 Status: ${testResponse.testing.summary}`);
   console.log('\n📋 KEY IMPROVEMENTS:');
   
