@@ -1,0 +1,52 @@
+{
+  "name": "local-dev-environment-standalone",
+  "version": "1.0.0",
+  "description": "Standalone Local Development Environment for Windows",
+  "main": "dist/index.js",
+  "scripts": {
+    "build-windows": "npm run build && npm run package-windows",
+    "build": "npm run build-client && npm run build-server",
+    "build-client": "vite build",
+    "build-server": "esbuild server/index.ts --bundle --platform=node --target=node18 --outfile=dist/server.js --external:pg-native --external:canvas --external:sharp",
+    "package-windows": "pkg dist/server.js --targets node18-win-x64 --output dist/local-dev-env.exe",
+    "create-installer": "electron-builder",
+    "bundle-dependencies": "npm pack && npm install --production --no-optional",
+    "create-portable": "node scripts/create-portable.js"
+  },
+  "pkg": {
+    "assets": [
+      "dist/public/**/*",
+      "node_modules/@neondatabase/**/*",
+      "node_modules/drizzle-orm/**/*",
+      "postgresql/**/*"
+    ],
+    "outputPath": "dist"
+  },
+  "build": {
+    "appId": "com.localrepl.dev-environment",
+    "productName": "Local Development Environment",
+    "directories": {
+      "output": "dist/installer"
+    },
+    "files": [
+      "dist/**/*",
+      "postgresql/**/*",
+      "!node_modules"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1",
+    "electron-builder": "^24.0.0"
+  }
+}
