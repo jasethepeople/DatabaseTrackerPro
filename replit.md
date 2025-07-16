@@ -133,3 +133,14 @@ The application follows a modern full-stack architecture with clear separation b
 4. **Component-Based UI**: Radix UI primitives with Tailwind for consistent design
 5. **Database-First**: Drizzle ORM with PostgreSQL for robust data persistence
 6. **Docker Abstraction**: VM and tool management abstracted through Docker containers
+
+## Recent Changes: Latest modifications with dates
+
+### January 15, 2025
+- **n8n Integration Added**: Integrated n8n workflow automation platform
+  - Added n8n to tool marketplace with proper Docker configuration
+  - Enhanced schema to support ports, environment variables, and volumes for tools
+  - Added n8n service template in service dashboard
+  - Configured n8n with authentication (admin/admin123) and port mapping (5678)
+  - Auto-seeding tools including n8n on marketplace load
+  - Added one-click browser launch for n8n interface from services dashboard

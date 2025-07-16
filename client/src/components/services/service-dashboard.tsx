@@ -8,10 +8,19 @@ export default function ServiceDashboard() {
     queryKey: ["/api/services"],
   });
 
-  // Mock services for demo
+  // Mock services for demo - in real implementation these would come from installed tools
   const mockServices = [
     {
       id: 1,
+      name: "n8n",
+      type: "docker",
+      status: "running",
+      port: 5678,
+      config: { image: "n8nio/n8n:latest" },
+      url: "http://localhost:5678"
+    },
+    {
+      id: 2,
       name: "web-server",
       type: "docker",
       status: "running",
@@ -19,7 +28,7 @@ export default function ServiceDashboard() {
       config: { image: "nginx:alpine" }
     },
     {
-      id: 2,
+      id: 3,
       name: "database",
       type: "docker",
       status: "stopped",
@@ -27,7 +36,7 @@ export default function ServiceDashboard() {
       config: { image: "postgres:15" }
     },
     {
-      id: 3,
+      id: 4,
       name: "redis-cache",
       type: "docker",
       status: "running",
@@ -159,9 +168,18 @@ export default function ServiceDashboard() {
                     variant="ghost"
                     size="sm"
                     className="text-xs github-blue hover:text-blue-400"
+                    onClick={() => {
+                      const url = service.url || `http://localhost:${service.port}`;
+                      window.open(url, '_blank');
+                    }}
                   >
                     Open in Browser ↗
                   </Button>
+                  {service.name === 'n8n' && (
+                    <div className="mt-1 text-xs github-gray">
+                      Login: admin / admin123
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -184,6 +202,7 @@ export default function ServiceDashboard() {
           <h4 className="text-sm font-medium text-white mb-2">Quick Start Templates</h4>
           <div className="grid grid-cols-1 gap-2">
             {[
+              { name: "n8n Workflow", icon: "🔄", description: "Automation platform" },
               { name: "Web Server", icon: "🌐", description: "Nginx/Apache" },
               { name: "Database", icon: "🗄️", description: "PostgreSQL/MySQL" },
               { name: "Cache", icon: "⚡", description: "Redis/Memcached" },

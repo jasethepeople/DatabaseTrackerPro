@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Search, Star, Download, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,24 @@ export default function ToolMarketplace() {
   const { data: userTools = [] } = useQuery({
     queryKey: ["/api/user/tools"],
   });
+
+  // Seed tools on component mount if none exist
+  useEffect(() => {
+    if (tools.length === 0 && !isLoading) {
+      seedTools();
+    }
+  }, [tools, isLoading]);
+
+  const seedTools = async () => {
+    try {
+      const response = await apiRequest("POST", "/api/tools/seed", {});
+      if (response.ok) {
+        queryClient.invalidateQueries({ queryKey: ["/api/tools"] });
+      }
+    } catch (error) {
+      console.error("Failed to seed tools:", error);
+    }
+  };
 
   const installToolMutation = useMutation({
     mutationFn: async (toolId: number) => {
@@ -59,11 +77,13 @@ export default function ToolMarketplace() {
       'mysql': '🗄️',
       'redis': '🔴',
       'mongodb': '🍃',
+      'n8n': '🔄',
     };
     return iconMap[toolName.toLowerCase()] || '🔧';
   };
 
-  const featuredTools = [
+  // Use real tools from API or fallback to featured tools
+  const featuredTools = tools.length > 0 ? tools.slice(0, 4) : [
     {
       id: 1,
       name: "nodejs",
@@ -88,6 +108,17 @@ export default function ToolMarketplace() {
     },
     {
       id: 3,
+      name: "n8n",
+      displayName: "n8n",
+      description: "Workflow automation tool for technical people",
+      category: "automation",
+      version: "v1.0.0",
+      rating: 46,
+      downloads: 45000,
+      isOfficial: true
+    },
+    {
+      id: 4,
       name: "docker",
       displayName: "Docker",
       description: "Platform for developing and shipping applications",
@@ -103,6 +134,7 @@ export default function ToolMarketplace() {
     { name: "Languages", icon: "💻", count: 12 },
     { name: "Databases", icon: "🗄️", count: 8 },
     { name: "Servers", icon: "🖥️", count: 6 },
+    { name: "Automation", icon: "🔄", count: 4 },
     { name: "Dev Tools", icon: "🔧", count: 15 },
   ];
 
@@ -173,7 +205,7 @@ export default function ToolMarketplace() {
                     <span className="text-xs github-gray">{tool.version}</span>
                     <div className="flex items-center space-x-1">
                       <Star className="text-yellow-400" size={12} />
-                      <span className="text-xs text-white">{(tool.rating / 10).toFixed(1)}</span>
+                      <span className="text-xs text-white">{tool.rating ? (tool.rating / 10).toFixed(1) : "4.8"}</span>
                     </div>
                   </div>
                 </div>

@@ -198,6 +198,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Seed some default tools if none exist
+  app.post("/api/tools/seed", async (req, res) => {
+    try {
+      const existingTools = await toolManager.getAvailableTools();
+      if (existingTools.length === 0) {
+        const defaultTools = [
+          {
+            name: "nodejs",
+            displayName: "Node.js",
+            description: "JavaScript runtime built on Chrome's V8 engine",
+            category: "runtime",
+            version: "v18.17.0",
+            dockerImage: "node:18-alpine",
+            ports: { "3000": "3000" },
+            environment: { NODE_ENV: "development" },
+            volumes: { "/app": "/workspace" }
+          },
+          {
+            name: "python",
+            displayName: "Python",
+            description: "Programming language that lets you work quickly",
+            category: "language",
+            version: "v3.11.4",
+            dockerImage: "python:3.11-alpine",
+            ports: { "8000": "8000" },
+            environment: { PYTHONPATH: "/app" },
+            volumes: { "/app": "/workspace" }
+          },
+          {
+            name: "n8n",
+            displayName: "n8n",
+            description: "Workflow automation tool for technical people",
+            category: "automation",
+            version: "v1.0.0",
+            dockerImage: "n8nio/n8n:latest",
+            ports: { "5678": "5678" },
+            environment: { 
+              N8N_BASIC_AUTH_ACTIVE: "true",
+              N8N_BASIC_AUTH_USER: "admin",
+              N8N_BASIC_AUTH_PASSWORD: "admin123"
+            },
+            volumes: { "/home/node/.n8n": "/workspace/.n8n" }
+          },
+          {
+            name: "docker",
+            displayName: "Docker",
+            description: "Platform for developing and shipping applications",
+            category: "containerization",
+            version: "v24.0.5",
+            dockerImage: "docker:24-dind",
+            ports: { "2375": "2375" },
+            environment: { DOCKER_TLS_CERTDIR: "" },
+            volumes: { "/var/run/docker.sock": "/var/run/docker.sock" }
+          }
+        ];
+
+        for (const tool of defaultTools) {
+          await toolManager.createTool(tool);
+        }
+
+        res.json({ message: "Default tools seeded", count: defaultTools.length });
+      } else {
+        res.json({ message: "Tools already exist", count: existingTools.length });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to seed tools" });
+    }
+  });
+
   app.post("/api/tools", authenticateUser, async (req: any, res) => {
     try {
       const toolData = insertToolSchema.parse(req.body);

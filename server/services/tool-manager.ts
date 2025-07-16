@@ -25,10 +25,39 @@ class ToolManagerImpl implements ToolManager {
 
     try {
       if (tool.dockerImage) {
-        // Install as Docker container
+        // Install as Docker container with proper configuration
         const containerName = `tool-${tool.name}-${userId}`;
-        const command = `docker run -d --name ${containerName} ${tool.dockerImage}`;
-        await execAsync(command);
+        let dockerCommand = `docker run -d --name ${containerName}`;
+        
+        // Add port mappings if specified
+        if (tool.ports && typeof tool.ports === 'object') {
+          for (const [hostPort, containerPort] of Object.entries(tool.ports)) {
+            dockerCommand += ` -p ${hostPort}:${containerPort}`;
+          }
+        }
+        
+        // Add environment variables if specified
+        if (tool.environment && typeof tool.environment === 'object') {
+          for (const [key, value] of Object.entries(tool.environment)) {
+            dockerCommand += ` -e ${key}="${value}"`;
+          }
+        }
+        
+        // Add volume mappings if specified
+        if (tool.volumes && typeof tool.volumes === 'object') {
+          for (const [hostPath, containerPath] of Object.entries(tool.volumes)) {
+            dockerCommand += ` -v ${hostPath}:${containerPath}`;
+          }
+        }
+        
+        dockerCommand += ` ${tool.dockerImage}`;
+        
+        await execAsync(dockerCommand);
+        
+        // For n8n, wait a moment for it to start up
+        if (tool.name === 'n8n') {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
       } else if (tool.installScript) {
         // Run installation script
         await execAsync(tool.installScript);

@@ -50,6 +50,9 @@ export const tools = pgTable("tools", {
   version: text("version"),
   installScript: text("install_script"),
   dockerImage: text("docker_image"),
+  ports: jsonb("ports"), // Port mappings for containers
+  environment: jsonb("environment"), // Environment variables
+  volumes: jsonb("volumes"), // Volume mappings
   isOfficial: boolean("is_official").default(false),
   rating: integer("rating").default(0),
   downloads: integer("downloads").default(0),
@@ -104,6 +107,9 @@ export const insertToolSchema = createInsertSchema(tools).pick({
   version: true,
   installScript: true,
   dockerImage: true,
+  ports: true,
+  environment: true,
+  volumes: true,
 });
 
 export const insertServiceSchema = createInsertSchema(services).pick({
