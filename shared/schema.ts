@@ -290,3 +290,28 @@ export type ApiDiscovery = typeof apiDiscovery.$inferSelect;
 export type InsertApiDiscovery = z.infer<typeof insertApiDiscoverySchema>;
 export type AccountCreationAttempt = typeof accountCreationAttempts.$inferSelect;
 export type InsertAccountCreationAttempt = z.infer<typeof insertAccountCreationAttemptSchema>;
+
+// Environment Snapshots
+export const environmentSnapshots = pgTable("environment_snapshots", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  snapshotData: jsonb("snapshot_data").notNull(),
+  fileCount: integer("file_count").default(0),
+  projectCount: integer("project_count").default(0),
+  vmCount: integer("vm_count").default(0),
+  serviceCount: integer("service_count").default(0),
+  size: integer("size").default(0), // Size in bytes
+  createdAt: timestamp("created_at").defaultNow(),
+  lastRestoredAt: timestamp("last_restored_at"),
+});
+
+export const insertEnvironmentSnapshotSchema = createInsertSchema(environmentSnapshots).omit({
+  id: true,
+  createdAt: true,
+  lastRestoredAt: true,
+});
+
+export type EnvironmentSnapshot = typeof environmentSnapshots.$inferSelect;
+export type InsertEnvironmentSnapshot = z.infer<typeof insertEnvironmentSnapshotSchema>;

@@ -3,13 +3,14 @@ import { neon } from "@neondatabase/serverless";
 import { eq, and } from "drizzle-orm";
 import {
   users, projects, files, vms, tools, userTools, services,
-  apiCredentials, backgroundJobs, dataCache,
+  apiCredentials, backgroundJobs, dataCache, environmentSnapshots,
   type User, type InsertUser, type Project, type InsertProject,
   type File, type InsertFile, type VM, type Tool, type InsertTool,
   type UserTool, type Service, type InsertService,
   type ApiCredential, type InsertApiCredential,
   type BackgroundJob, type InsertBackgroundJob,
   type DataCache, type InsertDataCache,
+  type EnvironmentSnapshot, type InsertEnvironmentSnapshot,
 } from "@shared/schema";
 
 // Database connection with error handling - using HTTP mode for better reliability
@@ -90,6 +91,13 @@ export interface IStorage {
   createDataCache(cache: InsertDataCache): Promise<DataCache>;
   updateDataCache(id: number, cache: Partial<DataCache>): Promise<DataCache | undefined>;
   deleteDataCache(id: number): Promise<boolean>;
+
+  // Environment Snapshot management
+  getEnvironmentSnapshot(id: number): Promise<EnvironmentSnapshot | undefined>;
+  getEnvironmentSnapshotsByUserId(userId: number): Promise<EnvironmentSnapshot[]>;
+  createEnvironmentSnapshot(snapshot: InsertEnvironmentSnapshot): Promise<EnvironmentSnapshot>;
+  updateEnvironmentSnapshot(id: number, snapshot: Partial<EnvironmentSnapshot>): Promise<EnvironmentSnapshot | undefined>;
+  deleteEnvironmentSnapshot(id: number): Promise<boolean>;
 }
 
 export class DbStorage implements IStorage {
@@ -353,6 +361,59 @@ export class DbStorage implements IStorage {
   async deleteDataCache(id: number): Promise<boolean> {
     const result = await db.delete(dataCache).where(eq(dataCache.id, id));
     return (result.rowCount || 0) > 0;
+  }
+
+  // Environment Snapshot management
+  async getEnvironmentSnapshot(id: number): Promise<EnvironmentSnapshot | undefined> {
+    try {
+      const [snapshot] = await db.select().from(environmentSnapshots).where(eq(environmentSnapshots.id, id));
+      return snapshot;
+    } catch (error) {
+      console.error('Error getting environment snapshot:', error);
+      return undefined;
+    }
+  }
+
+  async getEnvironmentSnapshotsByUserId(userId: number): Promise<EnvironmentSnapshot[]> {
+    try {
+      return await db.select().from(environmentSnapshots).where(eq(environmentSnapshots.userId, userId));
+    } catch (error) {
+      console.error('Error getting environment snapshots by user ID:', error);
+      return [];
+    }
+  }
+
+  async createEnvironmentSnapshot(snapshot: InsertEnvironmentSnapshot): Promise<EnvironmentSnapshot> {
+    try {
+      const [created] = await db.insert(environmentSnapshots).values(snapshot).returning();
+      return created;
+    } catch (error) {
+      console.error('Error creating environment snapshot:', error);
+      throw error;
+    }
+  }
+
+  async updateEnvironmentSnapshot(id: number, snapshot: Partial<EnvironmentSnapshot>): Promise<EnvironmentSnapshot | undefined> {
+    try {
+      const [updated] = await db.update(environmentSnapshots)
+        .set(snapshot)
+        .where(eq(environmentSnapshots.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating environment snapshot:', error);
+      return undefined;
+    }
+  }
+
+  async deleteEnvironmentSnapshot(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(environmentSnapshots).where(eq(environmentSnapshots.id, id));
+      return (result.rowCount || 0) > 0;
+    } catch (error) {
+      console.error('Error deleting environment snapshot:', error);
+      return false;
+    }
   }
 }
 

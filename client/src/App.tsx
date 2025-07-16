@@ -12,7 +12,10 @@ import DataDashboard from "./pages/data-dashboard";
 import AIDiscovery from "./pages/ai-discovery";
 import AutonomousLearning from "./pages/autonomous-learning";
 import TestingDashboard from "./pages/testing-dashboard";
+import EnvironmentSnapshots from "./pages/environment-snapshots";
 import AIChat from "./pages/ai-chat";
+import { Navigation } from "./components/navigation";
+import NotFound from "./pages/not-found";
 
 function Router() {
   const [user, setUser] = useState<any>(null);
@@ -54,15 +57,21 @@ function Router() {
   }
 
   return (
-    <Switch>
-      <Route path="/chat" component={AIChat} />
-      <Route path="/data" component={DataDashboard} />
-      <Route path="/ai-discovery" component={AIDiscovery} />
-      <Route path="/autonomous-learning" component={AutonomousLearning} />
-      <Route path="/testing" component={TestingDashboard} />
-      <Route path="/" component={AIChat} />
-      <Route component={AIChat} />
-    </Switch>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Navigation />
+      <main className="pt-16">
+        <Switch>
+          <Route path="/chat" component={AIChat} />
+          <Route path="/data" component={DataDashboard} />
+          <Route path="/ai-discovery" component={AIDiscovery} />
+          <Route path="/autonomous-learning" component={AutonomousLearning} />
+          <Route path="/testing" component={TestingDashboard} />
+          <Route path="/snapshots" component={EnvironmentSnapshots} />
+          <Route path="/" component={AIChat} />
+          <Route component={NotFound} />
+        </Switch>
+      </main>
+    </div>
   );
 }
 

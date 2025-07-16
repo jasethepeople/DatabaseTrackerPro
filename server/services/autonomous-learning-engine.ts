@@ -446,8 +446,22 @@ export class AutonomousLearningEngine {
   }
 
   private async identifyCapabilityGaps(usage: any, performance: any, patterns: any) {
-    // AI-powered gap analysis
-    return await aiCapabilityEngine.identifyGaps(usage, performance, patterns);
+    // AI-powered gap analysis - simplified implementation
+    const gaps: string[] = [];
+    
+    if (usage.successRate < 0.95) {
+      gaps.push('API reliability improvements needed');
+    }
+    
+    if (performance.responseTime > 1000) {
+      gaps.push('Performance optimization required');
+    }
+    
+    if (patterns.painPoints.length > 0) {
+      gaps.push('User experience improvements needed');
+    }
+    
+    return gaps;
   }
 
   private calculateImprovementScore(improvement: any): number {

@@ -14,6 +14,7 @@ import { externalAPIService } from "./services/external-apis";
 import { credentialManager } from "./services/credential-manager";
 import { backgroundJobScheduler } from "./services/background-job-scheduler";
 import { dataAccessManager } from "./services/data-access-manager";
+import { environmentSnapshotService } from "./services/environment-snapshot-service";
 
 // Middleware to verify auth token
 async function authenticateUser(req: any, res: any, next: any) {
@@ -1160,6 +1161,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: 'Failed to run comprehensive testing' });
+    }
+  });
+
+  // Environment Snapshot Management Routes
+  app.get('/api/snapshots', authenticateUser, async (req: any, res) => {
+    try {
+      const snapshots = await environmentSnapshotService.listSnapshots(req.user.id);
+      res.json({ success: true, snapshots });
+    } catch (error) {
+      console.error('Error fetching snapshots:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch snapshots' });
+    }
+  });
+
+  app.post('/api/snapshots', authenticateUser, async (req: any, res) => {
+    try {
+      const { name, description } = req.body;
+      if (!name) {
+        return res.status(400).json({ success: false, message: 'Snapshot name is required' });
+      }
+      
+      const snapshot = await environmentSnapshotService.createSnapshot(req.user.id, name, description);
+      res.json({ success: true, snapshot });
+    } catch (error) {
+      console.error('Error creating snapshot:', error);
+      res.status(500).json({ success: false, message: 'Failed to create snapshot' });
+    }
+  });
+
+  app.get('/api/snapshots/:id', authenticateUser, async (req: any, res) => {
+    try {
+      const snapshotId = parseInt(req.params.id);
+      const snapshot = await environmentSnapshotService.getSnapshotDetails(req.user.id, snapshotId);
+      
+      if (!snapshot) {
+        return res.status(404).json({ success: false, message: 'Snapshot not found' });
+      }
+      
+      res.json({ success: true, snapshot });
+    } catch (error) {
+      console.error('Error fetching snapshot details:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch snapshot details' });
+    }
+  });
+
+  app.post('/api/snapshots/:id/restore', authenticateUser, async (req: any, res) => {
+    try {
+      const snapshotId = parseInt(req.params.id);
+      const result = await environmentSnapshotService.restoreSnapshot(req.user.id, snapshotId);
+      res.json({ success: result.success, result });
+    } catch (error) {
+      console.error('Error restoring snapshot:', error);
+      res.status(500).json({ success: false, message: 'Failed to restore snapshot' });
+    }
+  });
+
+  app.delete('/api/snapshots/:id', authenticateUser, async (req: any, res) => {
+    try {
+      const snapshotId = parseInt(req.params.id);
+      const deleted = await environmentSnapshotService.deleteSnapshot(req.user.id, snapshotId);
+      
+      if (deleted) {
+        res.json({ success: true, message: 'Snapshot deleted successfully' });
+      } else {
+        res.status(404).json({ success: false, message: 'Snapshot not found' });
+      }
+    } catch (error) {
+      console.error('Error deleting snapshot:', error);
+      res.status(500).json({ success: false, message: 'Failed to delete snapshot' });
+    }
+  });
+
+  // Contextual Suggestions
+  app.get('/api/snapshots/analyze', authenticateUser, async (req: any, res) => {
+    try {
+      const analysis = await environmentSnapshotService.analyzeSnapshots(req.user.id);
+      res.json({ success: true, analysis });
+    } catch (error) {
+      console.error('Error analyzing snapshots:', error);
+      res.status(500).json({ success: false, message: 'Failed to analyze snapshots' });
     }
   });
 
