@@ -79,94 +79,82 @@ export default function AIChat() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            AI Assistant
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Chat with your AI assistant for coding help, deployment guidance, and more
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0d1117", color: "#e6edf3" }}>
+      {/* Header */}
+      <div className="p-4 border-b" style={{ borderColor: "#21262d" }}>
+        <h1 className="text-xl font-semibold">AI Assistant</h1>
+        <p className="text-sm opacity-70">Your coding and development assistant</p>
+      </div>
 
-        <Card className="h-[600px] flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="h-5 w-5" />
-              AI Chat
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col gap-4">
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex gap-3 ${
-                      message.role === "user" ? "flex-row-reverse" : "flex-row"
-                    }`}
-                  >
-                    <div className="flex-shrink-0">
-                      {message.role === "user" ? (
-                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                          <User className="h-4 w-4 text-white" />
-                        </div>
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                          <Bot className="h-4 w-4 text-white" />
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                        message.role === "user"
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      <p className="text-xs opacity-70 mt-1">
-                        {message.timestamp.toLocaleTimeString()}
-                      </p>
-                    </div>
+      {/* Chat Messages */}
+      <div className="flex-1 p-4 overflow-y-auto">
+        <div className="max-w-4xl mx-auto space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex gap-3 ${
+                message.role === "user" ? "flex-row-reverse" : "flex-row"
+              }`}
+            >
+              <div className="flex-shrink-0">
+                {message.role === "user" ? (
+                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                    <User className="h-4 w-4 text-white" />
                   </div>
-                ))}
-                {sendMessage.isPending && (
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                      <Bot className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Thinking...
-                      </p>
-                    </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-white" />
                   </div>
                 )}
               </div>
-            </ScrollArea>
-
-            <Separator />
-
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message here..."
-                disabled={sendMessage.isPending}
-                className="flex-1"
-              />
-              <Button
-                type="submit"
-                disabled={!input.trim() || sendMessage.isPending}
-                size="icon"
+              <div
+                className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                  message.role === "user"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-800 text-gray-100 border border-gray-700"
+                }`}
               >
-                <Send className="h-4 w-4" />
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-xs opacity-60 mt-2">
+                  {message.timestamp.toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+          ))}
+          {sendMessage.isPending && (
+            <div className="flex gap-3">
+              <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
+                <Bot className="h-4 w-4 text-white animate-pulse" />
+              </div>
+              <div className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
+                <p className="text-sm text-gray-300">AI is thinking...</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Input Area */}
+      <div className="p-4 border-t" style={{ borderColor: "#21262d" }}>
+        <div className="max-w-4xl mx-auto">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask me anything about coding, deployment, APIs..."
+              disabled={sendMessage.isPending}
+              className="flex-1 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+              style={{ backgroundColor: "#21262d", borderColor: "#30363d" }}
+            />
+            <Button
+              type="submit"
+              disabled={!input.trim() || sendMessage.isPending}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );
