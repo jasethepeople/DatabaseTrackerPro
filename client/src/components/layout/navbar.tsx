@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, Code, Folder, Database } from "lucide-react";
+import { ChevronDown, Code, Folder, Database, Brain } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -49,6 +49,14 @@ export default function Navbar() {
             }`}>
               <Database size={14} />
               Data Dashboard
+            </span>
+          </Link>
+          <Link href="/autonomous-learning">
+            <span className={`px-3 py-1 rounded text-sm cursor-pointer transition-colors flex items-center gap-1 ${
+              location === '/autonomous-learning' ? 'bg-white bg-opacity-10 text-white' : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+            }`}>
+              <Brain size={14} />
+              Learning Engine
             </span>
           </Link>
         </div>

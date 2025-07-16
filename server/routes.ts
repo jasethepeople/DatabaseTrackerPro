@@ -539,6 +539,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Autonomous Learning Engine routes
+  app.get('/api/ai/learning-status', authenticateUser, async (req: any, res) => {
+    try {
+      const { autonomousLearningEngine } = await import('./services/autonomous-learning-engine');
+      const status = await autonomousLearningEngine.getSystemStatus();
+      res.json({ success: true, status });
+    } catch (error) {
+      console.error('Failed to get learning status:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/ai/trigger-learning', authenticateUser, async (req: any, res) => {
+    try {
+      const { autonomousLearningEngine } = await import('./services/autonomous-learning-engine');
+      autonomousLearningEngine.performLearningCycle().catch(console.error);
+      res.json({ success: true, message: 'Learning cycle triggered' });
+    } catch (error) {
+      console.error('Failed to trigger learning:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/ai/self-improve', authenticateUser, async (req: any, res) => {
+    try {
+      const { selfImprovementSystem } = await import('./services/self-improvement-system');
+      selfImprovementSystem.performSelfImprovement().catch(console.error);
+      res.json({ success: true, message: 'Self-improvement cycle triggered' });
+    } catch (error) {
+      console.error('Failed to trigger self-improvement:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/ai/self-improvement-status', authenticateUser, async (req: any, res) => {
+    try {
+      const { selfImprovementSystem } = await import('./services/self-improvement-system');
+      const status = await selfImprovementSystem.getSystemStatus();
+      res.json({ success: true, status });
+    } catch (error) {
+      console.error('Failed to get self-improvement status:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/ai/enhance-capabilities', authenticateUser, async (req: any, res) => {
+    try {
+      const { selfImprovementSystem } = await import('./services/self-improvement-system');
+      selfImprovementSystem.enhanceCapabilities().catch(console.error);
+      res.json({ success: true, message: 'Capability enhancement started' });
+    } catch (error) {
+      console.error('Failed to enhance capabilities:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/ai/web-scan', authenticateUser, async (req: any, res) => {
+    try {
+      const { query, config } = req.body;
+      const { webcrawlerService } = await import('./services/web-crawler-service');
+      
+      const results = await webcrawlerService.deepScan(query, config);
+      res.json({ success: true, results });
+    } catch (error) {
+      console.error('Web scan failed:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
   // AI-Powered API Discovery endpoints
   app.post('/api/ai/discover-apis', authenticateUser, async (req: any, res) => {
     try {
