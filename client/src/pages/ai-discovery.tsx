@@ -205,7 +205,7 @@ export default function AIDiscovery() {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Categories</SelectItem>
+                      <SelectItem value="all">All Categories</SelectItem>
                       <SelectItem value="payments">Payments</SelectItem>
                       <SelectItem value="social">Social Media</SelectItem>
                       <SelectItem value="ai">AI/ML</SelectItem>
