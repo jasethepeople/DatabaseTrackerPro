@@ -61,7 +61,7 @@ export class BackgroundJobScheduler {
         .select()
         .from(backgroundJobs)
         .where(and(
-          eq(backgroundJobs.isActive, true),
+          eq(backgroundJobs.status, 'active'),
           lte(backgroundJobs.nextRun, now)
         ));
 
