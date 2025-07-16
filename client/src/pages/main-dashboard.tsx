@@ -28,6 +28,14 @@ export default function MainDashboard() {
       status: "Active"
     },
     {
+      title: "Code Snippet Generator",
+      description: "AI-powered code generation with one-click copy functionality",
+      icon: Code,
+      path: "/code-snippets",
+      color: "bg-cyan-500",
+      status: "Active"
+    },
+    {
       title: "Data Dashboard", 
       description: "Comprehensive analytics and system monitoring",
       icon: Database,
@@ -101,7 +109,7 @@ export default function MainDashboard() {
   ];
 
   const stats = [
-    { label: "Active Features", value: "6", icon: Activity },
+    { label: "Active Features", value: "7", icon: Activity },
     { label: "API Integrations", value: "50+", icon: Search },
     { label: "Test Success Rate", value: "92%", icon: TestTube },
     { label: "System Uptime", value: "99.9%", icon: Server }

@@ -328,7 +328,7 @@ export const codeSnippets = pgTable("code_snippets", {
   difficulty: varchar("difficulty", { length: 20 }).notNull(),
   tags: jsonb("tags").default([]),
   usage: text("usage"),
-  rating: decimal("rating", { precision: 3, scale: 2 }).default("0"),
+  rating: text("rating").default("0"),
   views: integer("views").default(0),
   isPublic: boolean("is_public").default(false),
   createdAt: timestamp("created_at").defaultNow(),
