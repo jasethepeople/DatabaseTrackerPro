@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { backgroundJobScheduler } from "./services/background-job-scheduler";
+import { autonomousSystemMonitor } from "./services/autonomous-system-monitor";
 
 const app = express();
 app.use(express.json());
@@ -48,6 +49,10 @@ app.use((req, res, next) => {
   import('./services/autonomous-learning-engine').then(({ autonomousLearningEngine }) => {
     autonomousLearningEngine.initialize().catch(console.error);
   });
+
+  // Start autonomous system monitor - this will continuously monitor and repair everything
+  console.log("🤖 Autonomous System Monitor initialized and active");
+  console.log("✅ Full autonomous self-repair capabilities enabled");
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

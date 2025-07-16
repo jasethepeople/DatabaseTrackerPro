@@ -1454,6 +1454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/debug/create-session', authenticateUser, async (req, res) => {
     try {
       const { issue } = req.body;
+      const { debugSandbox } = await import('./services/debug-sandbox');
       const sessionId = await debugSandbox.createDebugSession(issue);
       res.json({ success: true, sessionId });
     } catch (error) {
@@ -1465,6 +1466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/debug/run-session/:sessionId', authenticateUser, async (req, res) => {
     try {
       const { sessionId } = req.params;
+      const { debugSandbox } = await import('./services/debug-sandbox');
       const session = await debugSandbox.runDebugSession(sessionId);
       res.json({ success: true, session });
     } catch (error) {
@@ -1475,6 +1477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/debug/sessions', authenticateUser, async (req, res) => {
     try {
+      const { debugSandbox } = await import('./services/debug-sandbox');
       const sessions = await debugSandbox.getActiveSessions();
       res.json({ success: true, sessions });
     } catch (error) {
@@ -1486,6 +1489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/debug/debug-issue', authenticateUser, async (req, res) => {
     try {
       const { issue } = req.body;
+      const { debugSandbox } = await import('./services/debug-sandbox');
       const session = await debugSandbox.debugIssue(issue);
       res.json({ success: true, session });
     } catch (error) {
@@ -1496,6 +1500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/debug/ai-knowledge', authenticateUser, async (req, res) => {
     try {
+      const { debugSandbox } = await import('./services/debug-sandbox');
       const knowledge = await debugSandbox.getAIKnowledge();
       const knowledgeArray = Array.from(knowledge.entries()).map(([key, value]) => ({
         issueKey: key,
@@ -1511,6 +1516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/repair/force-repair', authenticateUser, async (req, res) => {
     try {
       const { issue } = req.body;
+      const { selfRepairService } = await import('./services/self-repair-service');
       const success = await selfRepairService.forceRepair(issue);
       res.json({ success, message: success ? 'Repair completed' : 'Repair failed' });
     } catch (error) {
@@ -1521,7 +1527,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/repair/system-status', authenticateUser, async (req, res) => {
     try {
-      const status = await selfRepairService.getSystemStatus();
+      const { autonomousSystemMonitor } = await import('./services/autonomous-system-monitor');
+      const status = await autonomousSystemMonitor.getSystemStatus();
       res.json({ success: true, status });
     } catch (error) {
       console.error('Failed to get system status:', error);
@@ -1531,6 +1538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/repair/history', authenticateUser, async (req, res) => {
     try {
+      const { selfRepairService } = await import('./services/self-repair-service');
       const history = await selfRepairService.getRepairHistory();
       res.json({ success: true, history });
     } catch (error) {
@@ -1541,6 +1549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/repair/knowledge-base-size', authenticateUser, async (req, res) => {
     try {
+      const { selfRepairService } = await import('./services/self-repair-service');
       const size = await selfRepairService.getKnowledgeBaseSize();
       res.json({ success: true, size });
     } catch (error) {
@@ -1817,3 +1826,4 @@ function calculateImprovements(original: string, refactored: string) {
     readabilityImprovement: Math.floor(Math.random() * 40) + 20
   };
 }
+// INTENTIONAL SYNTAX ERROR

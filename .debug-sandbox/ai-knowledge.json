@@ -13,5 +13,19 @@
         "Unknown failure"
       ]
     }
+  },
+  "9c52e955c7820118e17fb44122d1ace0": {
+    "patterns": [
+      "Port conflict detected"
+    ],
+    "solutions": [],
+    "confidence": 0.45,
+    "learningMetrics": {
+      "successRate": 0,
+      "avgExecutionTime": 56,
+      "commonFailures": [
+        "Unknown failure"
+      ]
+    }
   }
 }
