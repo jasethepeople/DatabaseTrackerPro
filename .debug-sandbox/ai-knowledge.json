@@ -4,11 +4,12 @@
       "High memory usage detected"
     ],
     "solutions": [],
-    "confidence": 0.45,
+    "confidence": 0.4,
     "learningMetrics": {
       "successRate": 0,
-      "avgExecutionTime": 50,
+      "avgExecutionTime": 67,
       "commonFailures": [
+        "Unknown failure",
         "Unknown failure"
       ]
     }
