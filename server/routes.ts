@@ -855,6 +855,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Simple AI Chat endpoint
+  app.post("/api/ai/chat", authenticateUser, async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Simple response - you can enhance this with actual AI integration
+      const responses = [
+        "I can help you with coding, deployment, and API integration. What specific task would you like assistance with?",
+        "I'm here to help! You can ask me about creating applications, managing databases, or deploying to various platforms.",
+        "I can assist with JavaScript/TypeScript development, React applications, database design, and much more. What would you like to build?",
+        "Let me help you with that! I can provide guidance on full-stack development, API integrations, and deployment strategies.",
+        "I'm ready to help! Whether it's coding, debugging, or architectural decisions, just let me know what you need.",
+        "I can help you discover and integrate APIs, manage credentials securely, and automate deployments across multiple platforms.",
+        "Need assistance with your development workflow? I can help with file management, VM orchestration, and tool installation.",
+        "I'm here to streamline your coding experience! Ask me about best practices, troubleshooting, or implementing new features."
+      ];
+      
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      
+      res.json({ 
+        response: randomResponse,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Chat error:", error);
+      res.status(500).json({ error: "Failed to process message" });
+    }
+  });
+
   // AI-Powered API Discovery endpoints
   app.post('/api/ai/discover-apis', authenticateUser, async (req: any, res) => {
     try {

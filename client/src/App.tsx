@@ -12,6 +12,7 @@ import DataDashboard from "./pages/data-dashboard";
 import AIDiscovery from "./pages/ai-discovery";
 import AutonomousLearning from "./pages/autonomous-learning";
 import TestingDashboard from "./pages/testing-dashboard";
+import AIChat from "./pages/ai-chat";
 
 function Router() {
   const [user, setUser] = useState<any>(null);
@@ -54,12 +55,13 @@ function Router() {
 
   return (
     <Switch>
+      <Route path="/chat" component={AIChat} />
       <Route path="/data" component={DataDashboard} />
       <Route path="/ai-discovery" component={AIDiscovery} />
       <Route path="/autonomous-learning" component={AutonomousLearning} />
       <Route path="/testing" component={TestingDashboard} />
-      <Route path="/" component={Dashboard} />
-      <Route component={Dashboard} />
+      <Route path="/" component={AIChat} />
+      <Route component={AIChat} />
     </Switch>
   );
 }
