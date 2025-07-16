@@ -15,6 +15,7 @@ import { credentialManager } from "./services/credential-manager";
 import { backgroundJobScheduler } from "./services/background-job-scheduler";
 import { dataAccessManager } from "./services/data-access-manager";
 import { environmentSnapshotService } from "./services/environment-snapshot-service";
+import { securityFrameworkService } from "./services/security-framework-service";
 
 // Middleware to verify auth token
 async function authenticateUser(req: any, res: any, next: any) {
@@ -902,7 +903,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { target, framework, modules } = req.body;
       
-      const { securityFrameworkService } = await import('./services/security-framework-service');
       const results = await securityFrameworkService.performReconnaissance(target, framework, modules);
       
       res.json(results);
@@ -916,7 +916,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { target, platform } = req.body;
       
-      const { securityFrameworkService } = await import('./services/security-framework-service');
       const exploits = await securityFrameworkService.searchExploits(target, platform);
       
       res.json({ exploits });
@@ -930,7 +929,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { target, analysisType, modules } = req.body;
       
-      const { securityFrameworkService } = await import('./services/security-framework-service');
       const results = await securityFrameworkService.performForensics(target, analysisType, modules);
       
       res.json({ results });
@@ -944,7 +942,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { target, campaign, methods } = req.body;
       
-      const { securityFrameworkService } = await import('./services/security-framework-service');
       const results = await securityFrameworkService.generateSocialEngineeringCampaign(target, campaign, methods);
       
       res.json(results);
@@ -957,9 +954,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/security/vulnerability-scan', authenticateUser, async (req, res) => {
     try {
       const { target, depth, databases } = req.body;
+      console.log('Vulnerability scan request:', { target, depth, databases });
       
-      const { securityFrameworkService } = await import('./services/security-framework-service');
       const vulnerabilities = await securityFrameworkService.scanVulnerabilities(target, depth, databases);
+      console.log('Vulnerability scan result:', vulnerabilities?.length || 0, 'vulnerabilities found');
       
       res.json({ vulnerabilities });
     } catch (error) {
@@ -972,7 +970,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { target, platform, type, options } = req.body;
       
-      const { securityFrameworkService } = await import('./services/security-framework-service');
       const payload = await securityFrameworkService.generatePayload(target, platform, type, options);
       
       res.json({ payload });
