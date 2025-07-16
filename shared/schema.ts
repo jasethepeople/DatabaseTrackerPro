@@ -315,3 +315,48 @@ export const insertEnvironmentSnapshotSchema = createInsertSchema(environmentSna
 
 export type EnvironmentSnapshot = typeof environmentSnapshots.$inferSelect;
 export type InsertEnvironmentSnapshot = z.infer<typeof insertEnvironmentSnapshotSchema>;
+
+// Code Snippets
+export const codeSnippets = pgTable("code_snippets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  code: text("code").notNull(),
+  language: varchar("language", { length: 50 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  difficulty: varchar("difficulty", { length: 20 }).notNull(),
+  tags: jsonb("tags").default([]),
+  usage: text("usage"),
+  rating: decimal("rating", { precision: 3, scale: 2 }).default("0"),
+  views: integer("views").default(0),
+  isPublic: boolean("is_public").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const snippetRatings = pgTable("snippet_ratings", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  snippetId: integer("snippet_id").notNull().references(() => codeSnippets.id),
+  rating: integer("rating").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCodeSnippetSchema = createInsertSchema(codeSnippets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  rating: true,
+  views: true,
+});
+
+export const insertSnippetRatingSchema = createInsertSchema(snippetRatings).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type CodeSnippet = typeof codeSnippets.$inferSelect;
+export type InsertCodeSnippet = z.infer<typeof insertCodeSnippetSchema>;
+export type SnippetRating = typeof snippetRatings.$inferSelect;
+export type InsertSnippetRating = z.infer<typeof insertSnippetRatingSchema>;

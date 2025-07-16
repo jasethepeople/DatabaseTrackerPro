@@ -1244,5 +1244,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Code Snippets Routes
+  app.get('/api/code-snippets', authenticateUser, async (req: any, res) => {
+    try {
+      const { search, language, category } = req.query;
+      const userId = req.user.id;
+      
+      const snippets = await storage.searchCodeSnippets(
+        userId, 
+        search as string, 
+        language as string, 
+        category as string
+      );
+      
+      res.json(snippets);
+    } catch (error) {
+      console.error("Error fetching code snippets:", error);
+      res.status(500).json({ error: "Failed to fetch code snippets" });
+    }
+  });
+
+  app.post('/api/code-snippets/generate', authenticateUser, async (req: any, res) => {
+    try {
+      const { prompt, language, category, difficulty } = req.body;
+      const userId = req.user.id;
+      
+      if (!prompt || !language || !category || !difficulty) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      const { codeSnippetService } = await import('./services/code-snippet-service');
+      
+      const generatedSnippet = await codeSnippetService.generateSnippet({
+        prompt,
+        language,
+        category,
+        difficulty
+      }, userId);
+      
+      res.json(generatedSnippet);
+    } catch (error) {
+      console.error("Error generating code snippet:", error);
+      res.status(500).json({ error: error.message || "Failed to generate code snippet" });
+    }
+  });
+
+  app.post('/api/code-snippets', authenticateUser, async (req: any, res) => {
+    try {
+      const snippetData = req.body;
+      const userId = req.user.id;
+      
+      const snippet = await storage.createCodeSnippet({
+        ...snippetData,
+        userId
+      });
+      
+      res.json(snippet);
+    } catch (error) {
+      console.error("Error creating code snippet:", error);
+      res.status(500).json({ error: "Failed to create code snippet" });
+    }
+  });
+
+  app.post('/api/code-snippets/:id/rate', authenticateUser, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { rating } = req.body;
+      const userId = req.user.id;
+      
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "Rating must be between 1 and 5" });
+      }
+      
+      await storage.rateSnippet(userId, id, rating);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error rating code snippet:", error);
+      res.status(500).json({ error: "Failed to rate code snippet" });
+    }
+  });
+
   return httpServer;
 }

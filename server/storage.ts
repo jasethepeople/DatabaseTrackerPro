@@ -4,6 +4,7 @@ import { eq, and } from "drizzle-orm";
 import {
   users, projects, files, vms, tools, userTools, services,
   apiCredentials, backgroundJobs, dataCache, environmentSnapshots,
+  codeSnippets, snippetRatings,
   type User, type InsertUser, type Project, type InsertProject,
   type File, type InsertFile, type VM, type Tool, type InsertTool,
   type UserTool, type Service, type InsertService,
@@ -11,6 +12,7 @@ import {
   type BackgroundJob, type InsertBackgroundJob,
   type DataCache, type InsertDataCache,
   type EnvironmentSnapshot, type InsertEnvironmentSnapshot,
+  type CodeSnippet, type InsertCodeSnippet,
 } from "@shared/schema";
 
 // Database connection with error handling - using HTTP mode for better reliability
@@ -98,6 +100,16 @@ export interface IStorage {
   createEnvironmentSnapshot(snapshot: InsertEnvironmentSnapshot): Promise<EnvironmentSnapshot>;
   updateEnvironmentSnapshot(id: number, snapshot: Partial<EnvironmentSnapshot>): Promise<EnvironmentSnapshot | undefined>;
   deleteEnvironmentSnapshot(id: number): Promise<boolean>;
+
+  // Code Snippet management
+  getCodeSnippet(id: number): Promise<CodeSnippet | undefined>;
+  getCodeSnippetsByUserId(userId: number): Promise<CodeSnippet[]>;
+  searchCodeSnippets(userId: number, query?: string, language?: string, category?: string): Promise<CodeSnippet[]>;
+  createCodeSnippet(snippet: InsertCodeSnippet): Promise<CodeSnippet>;
+  updateCodeSnippet(id: number, snippet: Partial<CodeSnippet>): Promise<CodeSnippet | undefined>;
+  deleteCodeSnippet(id: number): Promise<boolean>;
+  rateSnippet(userId: number, snippetId: number, rating: number): Promise<void>;
+  incrementSnippetViews(id: number): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -413,6 +425,120 @@ export class DbStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting environment snapshot:', error);
       return false;
+    }
+  }
+
+  // Code Snippet Management
+  async getCodeSnippet(id: number): Promise<CodeSnippet | undefined> {
+    try {
+      const [snippet] = await db.select().from(codeSnippets).where(eq(codeSnippets.id, id));
+      return snippet;
+    } catch (error) {
+      console.error("Error getting code snippet:", error);
+      return undefined;
+    }
+  }
+
+  async getCodeSnippetsByUserId(userId: number): Promise<CodeSnippet[]> {
+    try {
+      return await db.select().from(codeSnippets).where(eq(codeSnippets.userId, userId));
+    } catch (error) {
+      console.error("Error getting code snippets by user ID:", error);
+      return [];
+    }
+  }
+
+  async searchCodeSnippets(userId: number, query?: string, language?: string, category?: string): Promise<CodeSnippet[]> {
+    try {
+      let conditions = [eq(codeSnippets.userId, userId)];
+      
+      if (language && language !== 'all') {
+        conditions.push(eq(codeSnippets.language, language));
+      }
+      
+      if (category && category !== 'all') {
+        conditions.push(eq(codeSnippets.category, category));
+      }
+
+      const results = await db.select().from(codeSnippets).where(and(...conditions));
+      
+      if (query) {
+        return results.filter(snippet => 
+          snippet.title.toLowerCase().includes(query.toLowerCase()) ||
+          snippet.description?.toLowerCase().includes(query.toLowerCase()) ||
+          (snippet.tags as string[])?.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
+        );
+      }
+      
+      return results;
+    } catch (error) {
+      console.error("Error searching code snippets:", error);
+      return [];
+    }
+  }
+
+  async createCodeSnippet(snippet: InsertCodeSnippet): Promise<CodeSnippet> {
+    try {
+      const [newSnippet] = await db.insert(codeSnippets).values(snippet).returning();
+      return newSnippet;
+    } catch (error) {
+      console.error("Error creating code snippet:", error);
+      throw new Error("Failed to create code snippet");
+    }
+  }
+
+  async updateCodeSnippet(id: number, snippet: Partial<CodeSnippet>): Promise<CodeSnippet | undefined> {
+    try {
+      const [updatedSnippet] = await db
+        .update(codeSnippets)
+        .set({ ...snippet, updatedAt: new Date() })
+        .where(eq(codeSnippets.id, id))
+        .returning();
+      return updatedSnippet;
+    } catch (error) {
+      console.error("Error updating code snippet:", error);
+      return undefined;
+    }
+  }
+
+  async deleteCodeSnippet(id: number): Promise<boolean> {
+    try {
+      await db.delete(codeSnippets).where(eq(codeSnippets.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting code snippet:", error);
+      return false;
+    }
+  }
+
+  async rateSnippet(userId: number, snippetId: number, rating: number): Promise<void> {
+    try {
+      await db.insert(snippetRatings).values({
+        userId,
+        snippetId,
+        rating,
+      });
+
+      const ratings = await db.select().from(snippetRatings).where(eq(snippetRatings.snippetId, snippetId));
+      const avgRating = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
+      
+      await db.update(codeSnippets)
+        .set({ rating: avgRating.toString() })
+        .where(eq(codeSnippets.id, snippetId));
+    } catch (error) {
+      console.error("Error rating snippet:", error);
+      throw new Error("Failed to rate snippet");
+    }
+  }
+
+  async incrementSnippetViews(id: number): Promise<void> {
+    try {
+      const [current] = await db.select({ views: codeSnippets.views }).from(codeSnippets).where(eq(codeSnippets.id, id));
+      await db.update(codeSnippets)
+        .set({ views: (current?.views || 0) + 1 })
+        .where(eq(codeSnippets.id, id));
+    } catch (error) {
+      console.error("Error incrementing snippet views:", error);
     }
   }
 }
