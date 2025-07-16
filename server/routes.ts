@@ -1558,6 +1558,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Intelligent Code Suggestion Wizard Routes
+  app.get('/api/suggestions/analyze-file/:filePath(*)', authenticateUser, async (req, res) => {
+    try {
+      const { intelligentSuggestionWizard } = await import('./services/intelligent-suggestion-wizard');
+      const filePath = req.params.filePath;
+      const suggestions = await intelligentSuggestionWizard.analyzeFile(filePath);
+      res.json({ success: true, suggestions });
+    } catch (error) {
+      console.error('File analysis failed:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/suggestions/project-analysis', authenticateUser, async (req, res) => {
+    try {
+      const { intelligentSuggestionWizard } = await import('./services/intelligent-suggestion-wizard');
+      const suggestions = await intelligentSuggestionWizard.getProjectSuggestions();
+      res.json({ success: true, suggestions });
+    } catch (error) {
+      console.error('Project analysis failed:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/suggestions/apply-fix', authenticateUser, async (req, res) => {
+    try {
+      const { intelligentSuggestionWizard } = await import('./services/intelligent-suggestion-wizard');
+      const { suggestion } = req.body;
+      const success = await intelligentSuggestionWizard.applyAutoFix(suggestion);
+      res.json({ success, message: success ? 'Auto-fix applied successfully' : 'Auto-fix not available for this suggestion' });
+    } catch (error) {
+      console.error('Auto-fix failed:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.get('/api/suggestions/pattern-stats', authenticateUser, async (req, res) => {
+    try {
+      const { intelligentSuggestionWizard } = await import('./services/intelligent-suggestion-wizard');
+      const stats = intelligentSuggestionWizard.getPatternStats();
+      res.json({ success: true, stats });
+    } catch (error) {
+      console.error('Pattern stats failed:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
   // File Explorer Routes (Based on screenshot requirements)
   app.get('/api/files/structure', authenticateUser, async (req: any, res) => {
     try {

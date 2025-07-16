@@ -13,6 +13,7 @@ import AIDiscovery from "./pages/ai-discovery";
 import AutonomousLearning from "./pages/autonomous-learning";
 import TestingDashboard from "./pages/testing-dashboard";
 import EnvironmentSnapshots from "./pages/environment-snapshots";
+import IntelligentSuggestions from "./pages/intelligent-suggestions";
 import AIChat from "./pages/ai-chat";
 import CodeSnippets from "./pages/code-snippets";
 import DemoCodeSnippets from "./pages/demo-code-snippets";
@@ -78,6 +79,7 @@ function Router() {
           <Route path="/autonomous-learning" component={AutonomousLearning} />
           <Route path="/testing" component={TestingDashboard} />
           <Route path="/snapshots" component={EnvironmentSnapshots} />
+          <Route path="/intelligent-suggestions" component={IntelligentSuggestions} />
           <Route path="/security-framework" component={SecurityFramework} />
           <Route path="/code-refactoring" component={CodeRefactoring} />
           <Route path="/file-explorer" component={FileExplorer} />

@@ -12,7 +12,8 @@ import {
   Code,
   Key,
   Shield,
-  Wrench
+  Wrench,
+  Lightbulb
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 
@@ -34,6 +35,7 @@ export function Navigation() {
     { path: "/autonomous-learning", label: "Learning", icon: Brain },
     { path: "/testing", label: "Testing", icon: TestTube },
     { path: "/snapshots", label: "Snapshots", icon: Camera },
+    { path: "/intelligent-suggestions", label: "AI Suggestions", icon: Lightbulb },
     { path: "/security-framework", label: "Security", icon: Shield },
     { path: "/code-refactoring", label: "Refactor", icon: Wrench },
   ];

@@ -14,7 +14,8 @@ import {
   Terminal,
   Server,
   Settings,
-  Activity
+  Activity,
+  Lightbulb
 } from "lucide-react";
 
 export default function MainDashboard() {
@@ -73,6 +74,14 @@ export default function MainDashboard() {
       icon: Camera,
       path: "/snapshots",
       color: "bg-indigo-500",
+      status: "Active"
+    },
+    {
+      title: "Intelligent Suggestions",
+      description: "AI-powered code suggestions based on autonomous repair patterns",
+      icon: Lightbulb,
+      path: "/intelligent-suggestions",
+      color: "bg-yellow-500",
       status: "Active"
     }
   ];
