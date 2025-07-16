@@ -31,9 +31,9 @@ export default function MainDashboard() {
       title: "Code Snippet Generator",
       description: "AI-powered code generation with one-click copy functionality",
       icon: Code,
-      path: "/code-snippets",
+      path: "/demo-snippets",
       color: "bg-cyan-500",
-      status: "Active"
+      status: "Demo Available"
     },
     {
       title: "Data Dashboard", 

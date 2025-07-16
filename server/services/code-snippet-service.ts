@@ -28,6 +28,11 @@ export interface GeneratedSnippet {
 export class CodeSnippetService {
   async generateSnippet(request: CodeSnippetRequest, userId: number): Promise<GeneratedSnippet> {
     try {
+      // Check if API key is available
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error('Anthropic API key not configured. Please add your API key from https://console.anthropic.com/');
+      }
+
       const prompt = this.buildPrompt(request);
       
       const response = await anthropic.messages.create({
@@ -78,6 +83,12 @@ Guidelines:
       };
     } catch (error) {
       console.error('Error generating code snippet:', error);
+      
+      // Provide helpful error messages
+      if (error.message.includes('authentication method')) {
+        throw new Error('Anthropic API key not configured. Please add your API key from https://console.anthropic.com/');
+      }
+      
       throw new Error('Failed to generate code snippet. Please try again.');
     }
   }

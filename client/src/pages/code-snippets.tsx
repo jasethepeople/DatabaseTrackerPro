@@ -1,485 +1,383 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { 
   Code, 
   Copy, 
   Check, 
   Sparkles, 
-  Search, 
   Star,
-  Download,
   Eye,
-  Filter,
-  Zap,
-  BookOpen,
-  Settings
+  Search,
+  Plus,
+  Loader2,
+  AlertCircle
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-interface CodeSnippet {
-  id: number;
-  title: string;
-  description: string;
-  code: string;
-  language: string;
-  category: string;
-  difficulty: string;
-  tags: string[];
-  usage: string;
-  createdAt: string;
-  rating: number;
-  views: number;
-}
+const LANGUAGES = [
+  'javascript', 'typescript', 'python', 'java', 'cpp', 'csharp', 
+  'go', 'rust', 'php', 'ruby', 'swift', 'kotlin', 'html', 'css'
+];
+
+const CATEGORIES = [
+  'algorithms', 'data-structures', 'web-development', 'mobile', 'api',
+  'database', 'ai-ml', 'security', 'testing', 'devops', 'utilities', 'other'
+];
+
+const DIFFICULTIES = ['beginner', 'intermediate', 'advanced'];
 
 export default function CodeSnippets() {
-  const [prompt, setPrompt] = useState("");
-  const [language, setLanguage] = useState("javascript");
-  const [category, setCategory] = useState("general");
-  const [difficulty, setDifficulty] = useState("intermediate");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterLanguage, setFilterLanguage] = useState("all");
-  const [filterCategory, setFilterCategory] = useState("all");
+  const [selectedLanguage, setSelectedLanguage] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [showGenerator, setShowGenerator] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  
+  // Generator form state
+  const [generatorForm, setGeneratorForm] = useState({
+    prompt: "",
+    language: "javascript",
+    category: "utilities",
+    difficulty: "intermediate"
+  });
 
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch existing snippets
-  const { data: snippets = [], isLoading: snippetsLoading } = useQuery({
-    queryKey: ["/api/code-snippets", { search: searchQuery, language: filterLanguage, category: filterCategory }],
+  // Fetch code snippets
+  const { data: snippets = [], isLoading } = useQuery({
+    queryKey: ['/api/code-snippets', searchQuery, selectedLanguage, selectedCategory],
+    queryFn: () => apiRequest(`/api/code-snippets?search=${searchQuery}&language=${selectedLanguage}&category=${selectedCategory}`),
   });
 
-  // Generate new snippet mutation
+  // Generate snippet mutation
   const generateMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("/api/code-snippets/generate", {
-        method: "POST",
-        body: data,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/code-snippets"] });
-      setPrompt("");
-      toast({
-        title: "Snippet Generated",
-        description: "Your AI-powered code snippet has been created successfully.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Generation Failed",
-        description: error.message || "Failed to generate code snippet",
-        variant: "destructive",
-      });
+    mutationFn: (data: any) => apiRequest('/api/code-snippets/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    onSuccess: (data) => {
+      // Create and save the generated snippet
+      createSnippetMutation.mutate(data);
     },
   });
 
-  // Save snippet mutation
-  const saveMutation = useMutation({
-    mutationFn: async (snippet: any) => {
-      return await apiRequest("/api/code-snippets", {
-        method: "POST",
-        body: snippet,
-      });
-    },
+  // Create snippet mutation
+  const createSnippetMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('/api/code-snippets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/code-snippets"] });
-      toast({
-        title: "Snippet Saved",
-        description: "Code snippet has been saved to your library.",
+      queryClient.invalidateQueries({ queryKey: ['/api/code-snippets'] });
+      setShowGenerator(false);
+      setGeneratorForm({
+        prompt: "",
+        language: "javascript",
+        category: "utilities",
+        difficulty: "intermediate"
       });
     },
   });
 
   // Rate snippet mutation
   const rateMutation = useMutation({
-    mutationFn: async ({ id, rating }: { id: number; rating: number }) => {
-      return await apiRequest(`/api/code-snippets/${id}/rate`, {
-        method: "POST",
-        body: { rating },
-      });
-    },
+    mutationFn: ({ id, rating }: { id: number; rating: number }) => 
+      apiRequest(`/api/code-snippets/${id}/rate`, {
+        method: 'POST',
+        body: JSON.stringify({ rating }),
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/code-snippets"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/code-snippets'] });
     },
   });
-
-  const handleGenerate = () => {
-    if (!prompt.trim()) {
-      toast({
-        title: "Prompt Required",
-        description: "Please describe what code you want to generate.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    generateMutation.mutate({
-      prompt,
-      language,
-      category,
-      difficulty,
-    });
-  };
 
   const handleCopy = async (code: string, id: number) => {
     try {
       await navigator.clipboard.writeText(code);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
-      toast({
-        title: "Copied to Clipboard",
-        description: "Code snippet has been copied successfully.",
-      });
     } catch (error) {
-      toast({
-        title: "Copy Failed",
-        description: "Failed to copy code to clipboard.",
-        variant: "destructive",
-      });
+      console.error('Failed to copy:', error);
     }
   };
 
-  const languages = [
-    "javascript", "typescript", "python", "java", "cpp", "csharp", 
-    "go", "rust", "php", "ruby", "swift", "kotlin", "html", "css"
-  ];
+  const handleGenerate = () => {
+    if (!generatorForm.prompt.trim()) return;
+    generateMutation.mutate(generatorForm);
+  };
 
-  const categories = [
-    "general", "algorithms", "data-structures", "web-development", 
-    "mobile", "api", "database", "ai-ml", "security", "testing", 
-    "devops", "utilities"
-  ];
-
-  const difficulties = ["beginner", "intermediate", "advanced"];
-
-  const filteredSnippets = snippets.filter((snippet: CodeSnippet) => {
-    const matchesSearch = !searchQuery || 
-      snippet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      snippet.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      snippet.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesLanguage = filterLanguage === "all" || snippet.language === filterLanguage;
-    const matchesCategory = filterCategory === "all" || snippet.category === filterCategory;
-    
-    return matchesSearch && matchesLanguage && matchesCategory;
-  });
+  const handleRate = (snippetId: number, rating: number) => {
+    rateMutation.mutate({ id: snippetId, rating });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-            <Sparkles className="w-8 h-8 text-purple-500" />
-            AI Code Snippet Generator
+            <Code className="w-8 h-8 text-blue-500" />
+            Code Snippet Generator
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Generate, save, and manage code snippets with AI-powered assistance
+            AI-powered code generation with one-click copy functionality
           </p>
         </div>
 
-        <Tabs defaultValue="generate" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="generate" className="gap-2">
-              <Zap className="w-4 h-4" />
-              Generate
-            </TabsTrigger>
-            <TabsTrigger value="library" className="gap-2">
-              <BookOpen className="w-4 h-4" />
-              My Library
-            </TabsTrigger>
-          </TabsList>
+        {/* Controls */}
+        <div className="mb-6 space-y-4">
+          <div className="flex gap-4 items-center">
+            <Button
+              onClick={() => setShowGenerator(!showGenerator)}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Generate New Snippet
+            </Button>
+          </div>
 
-          {/* Generate Tab */}
-          <TabsContent value="generate" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Code className="w-5 h-5 text-blue-500" />
-                  Generate New Snippet
-                </CardTitle>
-                <CardDescription>
-                  Describe what you want to code and let AI generate it for you
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Language</label>
-                    <Select value={language} onValueChange={setLanguage}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {languages.map((lang) => (
-                          <SelectItem key={lang} value={lang}>
-                            {lang.charAt(0).toUpperCase() + lang.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Category</label>
-                    <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Difficulty</label>
-                    <Select value={difficulty} onValueChange={setDifficulty}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {difficulties.map((diff) => (
-                          <SelectItem key={diff} value={diff}>
-                            {diff.charAt(0).toUpperCase() + diff.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">What do you want to code?</label>
-                  <Textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe the functionality you want to implement (e.g., 'A function to validate email addresses', 'API endpoint for user authentication', 'React component for data visualization')"
-                    className="min-h-[100px]"
-                  />
-                </div>
+          {/* Search and Filters */}
+          <div className="flex gap-4 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search snippets..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Languages</SelectItem>
+                {LANGUAGES.map((lang) => (
+                  <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {CATEGORIES.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
+        {/* Generator Form */}
+        {showGenerator && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-500" />
+                Generate Code Snippet
+              </CardTitle>
+              <CardDescription>
+                Describe what you want to create and let AI generate it for you
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(generateMutation.error || createSnippetMutation.error) && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {generateMutation.error?.message || createSnippetMutation.error?.message}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <Textarea
+                placeholder="Describe the code you want to generate (e.g., 'Create a function to validate email addresses with regex')"
+                value={generatorForm.prompt}
+                onChange={(e) => setGeneratorForm(prev => ({...prev, prompt: e.target.value}))}
+                rows={3}
+              />
+              
+              <div className="flex gap-4">
+                <Select 
+                  value={generatorForm.language} 
+                  onValueChange={(value) => setGeneratorForm(prev => ({...prev, language: value}))}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select 
+                  value={generatorForm.category} 
+                  onValueChange={(value) => setGeneratorForm(prev => ({...prev, category: value}))}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select 
+                  value={generatorForm.difficulty} 
+                  onValueChange={(value) => setGeneratorForm(prev => ({...prev, difficulty: value}))}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DIFFICULTIES.map((diff) => (
+                      <SelectItem key={diff} value={diff}>{diff}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex gap-2">
                 <Button 
                   onClick={handleGenerate}
-                  disabled={generateMutation.isPending || !prompt.trim()}
-                  className="w-full gap-2"
-                  size="lg"
+                  disabled={!generatorForm.prompt.trim() || generateMutation.isPending || createSnippetMutation.isPending}
+                  className="gap-2"
                 >
-                  {generateMutation.isPending ? (
-                    <>
-                      <Settings className="w-4 h-4 animate-spin" />
-                      Generating...
-                    </>
+                  {(generateMutation.isPending || createSnippetMutation.isPending) ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Generate Code Snippet
-                    </>
+                    <Sparkles className="w-4 h-4" />
                   )}
+                  Generate Code
                 </Button>
-              </CardContent>
-            </Card>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowGenerator(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-            {/* Generated Result */}
-            {generateMutation.data && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Code className="w-5 h-5 text-green-500" />
-                      Generated Snippet
-                    </span>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCopy(generateMutation.data.code, 0)}
-                        className="gap-2"
-                      >
-                        {copiedId === 0 ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        Copy
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => saveMutation.mutate(generateMutation.data)}
-                        disabled={saveMutation.isPending}
-                        className="gap-2"
-                      >
-                        <Download className="w-4 h-4" />
-                        Save
-                      </Button>
-                    </div>
-                  </CardTitle>
-                  <CardDescription>{generateMutation.data.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex gap-2">
-                      <Badge variant="outline">{generateMutation.data.language}</Badge>
-                      <Badge variant="outline">{generateMutation.data.category}</Badge>
-                      <Badge variant="outline">{generateMutation.data.difficulty}</Badge>
-                    </div>
-                    <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-                      <code>{generateMutation.data.code}</code>
-                    </pre>
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && snippets.length === 0 && (
+          <div className="text-center py-12">
+            <Code className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              No snippets found
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Generate your first code snippet to get started
+            </p>
+            <Button onClick={() => setShowGenerator(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Generate Snippet
+            </Button>
+          </div>
+        )}
+
+        {/* Snippets List */}
+        <div className="space-y-6">
+          {snippets.map((snippet: any) => (
+            <Card key={snippet.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-xl">{snippet.title}</CardTitle>
+                    <CardDescription className="mt-2 text-base">{snippet.description}</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopy(snippet.code, snippet.id)}
+                    className="gap-2 shrink-0"
+                  >
+                    {copiedId === snippet.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copiedId === snippet.id ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Badge variant="outline">{snippet.language}</Badge>
+                  <Badge variant="outline">{snippet.category}</Badge>
+                  <Badge variant="outline">{snippet.difficulty}</Badge>
+                  {snippet.tags?.slice(0, 2).map((tag: string) => (
+                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                  ))}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                    <code>{snippet.code}</code>
+                  </pre>
+                  
+                  {snippet.usage && (
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                      <h4 className="font-medium mb-2">Usage Instructions:</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {generateMutation.data.usage}
+                      <h4 className="font-medium mb-2 text-blue-900 dark:text-blue-100">Usage Instructions:</h4>
+                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                        {snippet.usage}
                       </p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* Library Tab */}
-          <TabsContent value="library" className="space-y-6">
-            {/* Search and Filters */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="md:col-span-2">
-                    <Input
-                      placeholder="Search snippets..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  <Select value={filterLanguage} onValueChange={setFilterLanguage}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Languages" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Languages</SelectItem>
-                      {languages.map((lang) => (
-                        <SelectItem key={lang} value={lang}>
-                          {lang.charAt(0).toUpperCase() + lang.slice(1)}
-                        </SelectItem>
+                  )}
+                  
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-4 h-4" />
+                        {snippet.views || 0} views
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Star className="w-4 h-4 text-yellow-500" />
+                        {snippet.rating || 0}/5.0
+                      </span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => handleRate(snippet.id, star)}
+                          disabled={rateMutation.isPending}
+                        >
+                          <Star
+                            className={`w-4 h-4 cursor-pointer hover:text-yellow-400 ${
+                              star <= (snippet.rating || 0)
+                                ? 'text-yellow-400 fill-current' 
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        </button>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterCategory} onValueChange={setFilterCategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-
-            {/* Snippets Grid */}
-            {snippetsLoading ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {[...Array(4)].map((_, i) => (
-                  <Card key={i} className="animate-pulse">
-                    <CardHeader>
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : filteredSnippets.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <Code className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    No snippets found
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {searchQuery || filterLanguage !== "all" || filterCategory !== "all" 
-                      ? "Try adjusting your search or filters" 
-                      : "Generate your first code snippet to get started"}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {filteredSnippets.map((snippet: CodeSnippet) => (
-                  <Card key={snippet.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{snippet.title}</CardTitle>
-                          <CardDescription className="mt-1">{snippet.description}</CardDescription>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCopy(snippet.code, snippet.id)}
-                          className="gap-2"
-                        >
-                          {copiedId === snippet.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                          Copy
-                        </Button>
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        <Badge variant="outline">{snippet.language}</Badge>
-                        <Badge variant="outline">{snippet.category}</Badge>
-                        <Badge variant="outline">{snippet.difficulty}</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <pre className="bg-gray-900 text-gray-100 p-3 rounded text-sm overflow-x-auto max-h-48">
-                        <code>{snippet.code}</code>
-                      </pre>
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                          <span className="flex items-center gap-1">
-                            <Eye className="w-4 h-4" />
-                            {snippet.views}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Star className="w-4 h-4" />
-                            {snippet.rating.toFixed(1)}
-                          </span>
-                        </div>
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`w-4 h-4 cursor-pointer ${
-                                star <= snippet.rating 
-                                  ? 'text-yellow-400 fill-current' 
-                                  : 'text-gray-300'
-                              }`}
-                              onClick={() => rateMutation.mutate({ id: snippet.id, rating: star })}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+          ))}
+        </div>
       </div>
     </div>
   );
