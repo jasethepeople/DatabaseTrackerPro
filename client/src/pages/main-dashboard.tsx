@@ -83,6 +83,14 @@ export default function MainDashboard() {
       path: "/intelligent-suggestions",
       color: "bg-yellow-500",
       status: "Active"
+    },
+    {
+      title: "AI Coding Assistant",
+      description: "Context-aware coding assistant with intelligent completions",
+      icon: Bot,
+      path: "/ai-coding-assistant",
+      color: "bg-purple-500",
+      status: "Active"
     }
   ];
 

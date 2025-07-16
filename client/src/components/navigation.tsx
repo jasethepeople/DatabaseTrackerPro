@@ -36,6 +36,7 @@ export function Navigation() {
     { path: "/testing", label: "Testing", icon: TestTube },
     { path: "/snapshots", label: "Snapshots", icon: Camera },
     { path: "/intelligent-suggestions", label: "AI Suggestions", icon: Lightbulb },
+    { path: "/ai-coding-assistant", label: "AI Assistant", icon: Bot },
     { path: "/security-framework", label: "Security", icon: Shield },
     { path: "/code-refactoring", label: "Refactor", icon: Wrench },
   ];

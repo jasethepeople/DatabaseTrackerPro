@@ -1649,8 +1649,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  return httpServer;
-}
+  // AI coding assistant routes
+  app.post('/api/ai-assistant/analyze', authenticateUser, async (req: any, res) => {
+    try {
+      const { aiCodingAssistant } = await import('./services/ai-coding-assistant.js');
+      const analysis = await aiCodingAssistant.analyzeCodeContext(req.body);
+      res.json(analysis);
+    } catch (error) {
+      console.error('Error in AI coding assistant analysis:', error);
+      res.status(500).json({ error: 'Analysis failed' });
+    }
+  });
+
+  app.get('/api/ai-assistant/stats', authenticateUser, async (req: any, res) => {
+    try {
+      const { aiCodingAssistant } = await import('./services/ai-coding-assistant.js');
+      const stats = aiCodingAssistant.getAssistantStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching assistant stats:', error);
+      res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+  });
+
+  app.post('/api/ai-assistant/apply-suggestion', authenticateUser, async (req: any, res) => {
+    try {
+      const { suggestionId, code } = req.body;
+      const { aiCodingAssistant } = await import('./services/ai-coding-assistant.js');
+      const updatedCode = await aiCodingAssistant.applyAISuggestion(suggestionId, code);
+      res.json({ success: true, updatedCode, suggestionId });
+    } catch (error) {
+      console.error('Error applying suggestion:', error);
+      res.status(500).json({ error: 'Failed to apply suggestion' });
+    }
+  });
+
+
 
 // Helper functions for code analysis and refactoring
 function generateRefactoringSuggestions(code: string, language: string) {
@@ -1873,4 +1907,7 @@ function calculateImprovements(original: string, refactored: string) {
     readabilityImprovement: Math.floor(Math.random() * 40) + 20
   };
 }
-// INTENTIONAL SYNTAX ERROR
+
+  return httpServer;
+}
+

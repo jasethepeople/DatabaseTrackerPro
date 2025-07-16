@@ -23,6 +23,7 @@ import SecurityFramework from "./pages/security-framework";
 import CodeRefactoring from "./pages/code-refactoring";
 import FileExplorer from "./pages/file-explorer";
 import DebugDashboard from "./pages/debug-dashboard";
+import AICodingAssistant from "./pages/ai-coding-assistant";
 import { Navigation } from "./components/navigation";
 import NotFound from "./pages/not-found";
 
@@ -80,6 +81,7 @@ function Router() {
           <Route path="/testing" component={TestingDashboard} />
           <Route path="/snapshots" component={EnvironmentSnapshots} />
           <Route path="/intelligent-suggestions" component={IntelligentSuggestions} />
+          <Route path="/ai-coding-assistant" component={AICodingAssistant} />
           <Route path="/security-framework" component={SecurityFramework} />
           <Route path="/code-refactoring" component={CodeRefactoring} />
           <Route path="/file-explorer" component={FileExplorer} />
