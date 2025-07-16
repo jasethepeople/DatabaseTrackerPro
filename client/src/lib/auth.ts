@@ -18,9 +18,10 @@ export class AuthError extends Error {
 
 export const auth = {
   async login(username: string, password: string): Promise<LoginResponse> {
-    const response = await apiRequest("POST", "/api/auth/login", {
-      username,
-      password,
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
     });
     
     if (!response.ok) {
@@ -30,6 +31,7 @@ export const auth = {
     
     const data = await response.json();
     localStorage.setItem("auth_token", data.token);
+    console.log("Token stored in localStorage:", data.token);
     return data;
   },
 

@@ -14,11 +14,11 @@ import AutonomousLearning from "./pages/autonomous-learning";
 import TestingDashboard from "./pages/testing-dashboard";
 import EnvironmentSnapshots from "./pages/environment-snapshots";
 import IntelligentSuggestions from "./pages/intelligent-suggestions";
-import AIChat from "./pages/ai-chat";
+import SimpleChat from "./pages/simple-chat";
 import CodeSnippets from "./pages/code-snippets";
 import DemoCodeSnippets from "./pages/demo-code-snippets";
 import AnthropicKeyDemo from "./pages/anthropic-key-demo";
-import MainDashboard from "./pages/main-dashboard";
+import WorkingDashboard from "./pages/working-dashboard";
 import SecurityFramework from "./pages/security-framework";
 import CodeRefactoring from "./pages/code-refactoring";
 import FileExplorer from "./pages/file-explorer";
@@ -34,11 +34,31 @@ function Router() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await auth.getCurrentUser();
-        console.log("Current user:", currentUser);
-        setUser(currentUser);
+        const token = localStorage.getItem("auth_token");
+        console.log("Token check:", token ? "Present" : "Missing");
+        
+        if (!token) {
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+          const currentUser = await response.json();
+          console.log("Current user:", currentUser);
+          setUser(currentUser);
+        } else {
+          console.log("Auth failed, removing token");
+          localStorage.removeItem("auth_token");
+          setUser(null);
+        }
       } catch (error) {
         console.error("Auth check failed:", error);
+        localStorage.removeItem("auth_token");
         setUser(null);
       } finally {
         setLoading(false);
@@ -71,7 +91,7 @@ function Router() {
       <Navigation />
       <main className="pt-16">
         <Switch>
-          <Route path="/chat" component={AIChat} />
+          <Route path="/chat" component={SimpleChat} />
           <Route path="/code-snippets" component={CodeSnippets} />
           <Route path="/demo-snippets" component={DemoCodeSnippets} />
           <Route path="/anthropic-demo" component={AnthropicKeyDemo} />
@@ -87,7 +107,7 @@ function Router() {
           <Route path="/file-explorer" component={FileExplorer} />
           <Route path="/debug-dashboard" component={DebugDashboard} />
           <Route path="/ide" component={Dashboard} />
-          <Route path="/" component={MainDashboard} />
+          <Route path="/" component={WorkingDashboard} />
           <Route component={NotFound} />
         </Switch>
       </main>

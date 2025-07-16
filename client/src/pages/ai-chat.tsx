@@ -38,6 +38,10 @@ export default function AIChat() {
 
   const sendMessage = useMutation({
     mutationFn: async (message: string) => {
+      console.log("Sending message:", message);
+      const token = localStorage.getItem("auth_token");
+      console.log("Using token:", token ? "Present" : "Missing");
+      
       const response = await apiRequest("POST", "/api/ai/chat", { message });
       return await response.json();
     },
