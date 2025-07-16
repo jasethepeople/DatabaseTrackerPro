@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, Code, Folder } from "lucide-react";
+import { ChevronDown, Code, Folder, Database } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
+import { Link, useLocation } from "wouter";
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
@@ -23,12 +24,33 @@ export default function Navbar() {
     auth.logout();
   };
 
+  const [location] = useLocation();
+
   return (
     <nav className="h-12 github-surface border-b border-opacity-20 border-white flex items-center px-4 z-50">
       <div className="flex items-center space-x-4">
         <div className="flex items-center space-x-2">
           <Code className="github-blue" size={20} />
           <span className="text-lg font-bold text-white">LocalReplit</span>
+        </div>
+        
+        {/* Navigation Links */}
+        <div className="flex items-center space-x-2">
+          <Link href="/">
+            <span className={`px-3 py-1 rounded text-sm cursor-pointer transition-colors ${
+              location === '/' ? 'bg-white bg-opacity-10 text-white' : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+            }`}>
+              IDE
+            </span>
+          </Link>
+          <Link href="/data">
+            <span className={`px-3 py-1 rounded text-sm cursor-pointer transition-colors flex items-center gap-1 ${
+              location === '/data' ? 'bg-white bg-opacity-10 text-white' : 'text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5'
+            }`}>
+              <Database size={14} />
+              Data Dashboard
+            </span>
+          </Link>
         </div>
         
         {/* Project Selector */}

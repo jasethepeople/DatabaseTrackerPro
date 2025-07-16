@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -132,3 +132,98 @@ export type InsertTool = z.infer<typeof insertToolSchema>;
 export type UserTool = typeof userTools.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
+
+// API Credentials and Permissions Management
+export const apiCredentials = pgTable("api_credentials", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  apiId: text("api_id").notNull(), // matches external-apis.ts ids
+  name: text("name").notNull(),
+  encryptedKey: text("encrypted_key").notNull(),
+  encryptedSecret: text("encrypted_secret"), // for OAuth apps
+  isActive: boolean("is_active").default(true),
+  permissions: jsonb("permissions").default({}), // granular permissions
+  lastUsed: timestamp("last_used"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const backgroundJobs = pgTable("background_jobs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  jobType: text("job_type").notNull(), // 'api_sync', 'data_poll', 'webhook'
+  apiId: text("api_id").notNull(),
+  endpoint: text("endpoint").notNull(),
+  schedule: text("schedule").notNull(), // cron expression
+  isActive: boolean("is_active").default(true),
+  config: jsonb("config").default({}),
+  lastRun: timestamp("last_run"),
+  nextRun: timestamp("next_run"),
+  status: text("status").default("pending"),
+  errorCount: integer("error_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const dataCache = pgTable("data_cache", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  cacheKey: text("cache_key").notNull(),
+  apiId: text("api_id").notNull(),
+  endpoint: text("endpoint").notNull(),
+  data: jsonb("data").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const apiPermissions = pgTable("api_permissions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  apiId: text("api_id").notNull(),
+  permission: text("permission").notNull(), // 'read', 'write', 'admin'
+  scope: text("scope").notNull(), // specific endpoint or data type
+  isGranted: boolean("is_granted").default(false),
+  grantedAt: timestamp("granted_at"),
+  grantedBy: integer("granted_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas for new tables
+export const insertApiCredentialSchema = createInsertSchema(apiCredentials).omit({
+  id: true,
+  lastUsed: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBackgroundJobSchema = createInsertSchema(backgroundJobs).omit({
+  id: true,
+  lastRun: true,
+  nextRun: true,
+  status: true,
+  errorCount: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDataCacheSchema = createInsertSchema(dataCache).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertApiPermissionSchema = createInsertSchema(apiPermissions).omit({
+  id: true,
+  grantedAt: true,
+  grantedBy: true,
+  createdAt: true,
+});
+
+// Type exports for new tables
+export type ApiCredential = typeof apiCredentials.$inferSelect;
+export type InsertApiCredential = z.infer<typeof insertApiCredentialSchema>;
+export type BackgroundJob = typeof backgroundJobs.$inferSelect;
+export type InsertBackgroundJob = z.infer<typeof insertBackgroundJobSchema>;
+export type DataCache = typeof dataCache.$inferSelect;
+export type InsertDataCache = z.infer<typeof insertDataCacheSchema>;
+export type ApiPermission = typeof apiPermissions.$inferSelect;
+export type InsertApiPermission = z.infer<typeof insertApiPermissionSchema>;

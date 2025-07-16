@@ -6,7 +6,14 @@ import { vmManager } from "./services/vm-manager";
 import { toolManager } from "./services/tool-manager";
 import { fileManager } from "./services/file-manager";
 import { setupWebSocket } from "./websocket";
-import { insertUserSchema, insertProjectSchema, insertFileSchema, insertToolSchema } from "@shared/schema";
+import { 
+  insertUserSchema, insertProjectSchema, insertFileSchema, insertToolSchema,
+  insertApiCredentialSchema, insertBackgroundJobSchema 
+} from "@shared/schema";
+import { externalAPIService } from "./services/external-apis";
+import { credentialManager } from "./services/credential-manager";
+import { backgroundJobScheduler } from "./services/background-job-scheduler";
+import { dataAccessManager } from "./services/data-access-manager";
 
 // Middleware to verify auth token
 async function authenticateUser(req: any, res: any, next: any) {
@@ -142,6 +149,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedFile);
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update file" });
+    }
+  });
+
+  app.delete("/api/files/:id", authenticateUser, async (req: any, res) => {
+    try {
+      const file = await storage.getFile(parseInt(req.params.id));
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Verify user owns the project
+      const project = await storage.getProject(file.projectId);
+      if (!project || project.userId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await fileManager.deleteFile(file.id);
+      res.json({ message: "File deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to delete file" });
+    }
+  });
+
+  app.patch("/api/files/:id/rename", authenticateUser, async (req: any, res) => {
+    try {
+      const file = await storage.getFile(parseInt(req.params.id));
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Verify user owns the project
+      const project = await storage.getProject(file.projectId);
+      if (!project || project.userId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const { newPath } = req.body;
+      const renamedFile = await fileManager.moveFile(file.id, newPath);
+      res.json(renamedFile);
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to rename file" });
     }
   });
 
@@ -326,6 +374,180 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(hardware);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch hardware status" });
+    }
+  });
+
+  // Data Access and Management Routes
+  app.get("/api/data/:apiId/:endpoint", authenticateUser, async (req: any, res) => {
+    try {
+      const { apiId, endpoint } = req.params;
+      const forceRefresh = req.query.refresh === 'true';
+      
+      const data = await dataAccessManager.getData(
+        req.user.id,
+        apiId,
+        decodeURIComponent(endpoint),
+        forceRefresh
+      );
+      
+      res.json({ success: true, data });
+    } catch (error) {
+      console.error('Data access error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Failed to fetch data' 
+      });
+    }
+  });
+
+  app.get("/api/data/available", authenticateUser, async (req: any, res) => {
+    try {
+      const availableData = await dataAccessManager.getAvailableData(req.user.id);
+      res.json({ success: true, data: availableData });
+    } catch (error) {
+      console.error('Error getting available data:', error);
+      res.status(500).json({ success: false, message: 'Failed to get available data' });
+    }
+  });
+
+  app.post("/api/data/auto-sync", authenticateUser, async (req: any, res) => {
+    try {
+      const { apiId, endpoint, schedule } = req.body;
+      
+      const job = await dataAccessManager.setupAutoSync(
+        req.user.id,
+        apiId,
+        endpoint,
+        schedule
+      );
+      
+      res.json({ success: true, job });
+    } catch (error) {
+      console.error('Error setting up auto-sync:', error);
+      res.status(500).json({ success: false, message: 'Failed to setup auto-sync' });
+    }
+  });
+
+  // API Credentials Management
+  app.get("/api/credentials", authenticateUser, async (req: any, res) => {
+    try {
+      const credentials = await credentialManager.getUserCredentials(req.user.id);
+      // Don't expose encrypted keys in the response
+      const safeCredentials = credentials.map(cred => ({
+        id: cred.id,
+        apiId: cred.apiId,
+        name: cred.name,
+        isActive: cred.isActive,
+        permissions: cred.permissions,
+        lastUsed: cred.lastUsed,
+        createdAt: cred.createdAt
+      }));
+      res.json({ success: true, credentials: safeCredentials });
+    } catch (error) {
+      console.error('Error fetching credentials:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch credentials' });
+    }
+  });
+
+  app.post("/api/credentials", authenticateUser, async (req: any, res) => {
+    try {
+      const credentialData = insertApiCredentialSchema.parse({
+        ...req.body,
+        userId: req.user.id
+      });
+      
+      const credential = await credentialManager.storeCredential(credentialData);
+      
+      // Don't expose encrypted keys in response
+      const safeCredential = {
+        id: credential.id,
+        apiId: credential.apiId,
+        name: credential.name,
+        isActive: credential.isActive,
+        permissions: credential.permissions,
+        createdAt: credential.createdAt
+      };
+      
+      res.json({ success: true, credential: safeCredential });
+    } catch (error) {
+      console.error('Error storing credential:', error);
+      res.status(400).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Failed to store credential' 
+      });
+    }
+  });
+
+  app.delete("/api/credentials/:id", authenticateUser, async (req: any, res) => {
+    try {
+      const credentialId = parseInt(req.params.id);
+      const success = await credentialManager.deleteCredential(req.user.id, credentialId);
+      
+      if (success) {
+        res.json({ success: true, message: 'Credential deleted successfully' });
+      } else {
+        res.status(404).json({ success: false, message: 'Credential not found' });
+      }
+    } catch (error) {
+      console.error('Error deleting credential:', error);
+      res.status(500).json({ success: false, message: 'Failed to delete credential' });
+    }
+  });
+
+  // Background Jobs Management
+  app.get("/api/background-jobs", authenticateUser, async (req: any, res) => {
+    try {
+      const jobs = await backgroundJobScheduler.getUserJobs(req.user.id);
+      res.json({ success: true, jobs });
+    } catch (error) {
+      console.error('Error fetching background jobs:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch background jobs' });
+    }
+  });
+
+  app.post("/api/background-jobs", authenticateUser, async (req: any, res) => {
+    try {
+      const jobData = insertBackgroundJobSchema.parse({
+        ...req.body,
+        userId: req.user.id
+      });
+      
+      const job = await backgroundJobScheduler.createJob(jobData);
+      res.json({ success: true, job });
+    } catch (error) {
+      console.error('Error creating background job:', error);
+      res.status(400).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Failed to create background job' 
+      });
+    }
+  });
+
+  app.delete("/api/background-jobs/:id", authenticateUser, async (req: any, res) => {
+    try {
+      const jobId = parseInt(req.params.id);
+      const success = await backgroundJobScheduler.deleteJob(req.user.id, jobId);
+      
+      if (success) {
+        res.json({ success: true, message: 'Background job deleted successfully' });
+      } else {
+        res.status(404).json({ success: false, message: 'Background job not found' });
+      }
+    } catch (error) {
+      console.error('Error deleting background job:', error);
+      res.status(500).json({ success: false, message: 'Failed to delete background job' });
+    }
+  });
+
+  // Cache Management
+  app.delete("/api/cache", authenticateUser, async (req: any, res) => {
+    try {
+      const apiId = req.query.apiId as string;
+      await dataAccessManager.clearCache(req.user.id, apiId);
+      res.json({ success: true, message: 'Cache cleared successfully' });
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+      res.status(500).json({ success: false, message: 'Failed to clear cache' });
     }
   });
 

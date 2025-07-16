@@ -8,6 +8,7 @@ import { auth } from "./lib/auth";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import Dashboard from "./pages/dashboard";
+import DataDashboard from "./pages/data-dashboard";
 
 function Router() {
   const [user, setUser] = useState<any>(null);
@@ -38,12 +39,21 @@ function Router() {
     );
   }
 
+  if (!user) {
+    return (
+      <Switch>
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
+        <Route component={Login} />
+      </Switch>
+    );
+  }
+
   return (
     <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/" component={user ? Dashboard : Login} />
-      <Route component={() => user ? <Dashboard /> : <Login />} />
+      <Route path="/data" component={DataDashboard} />
+      <Route path="/" component={Dashboard} />
+      <Route component={Dashboard} />
     </Switch>
   );
 }

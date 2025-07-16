@@ -3,9 +3,13 @@ import { neon } from "@neondatabase/serverless";
 import { eq, and } from "drizzle-orm";
 import {
   users, projects, files, vms, tools, userTools, services,
+  apiCredentials, backgroundJobs, dataCache,
   type User, type InsertUser, type Project, type InsertProject,
   type File, type InsertFile, type VM, type Tool, type InsertTool,
-  type UserTool, type Service, type InsertService
+  type UserTool, type Service, type InsertService,
+  type ApiCredential, type InsertApiCredential,
+  type BackgroundJob, type InsertBackgroundJob,
+  type DataCache, type InsertDataCache,
 } from "@shared/schema";
 
 // Database connection with error handling - using HTTP mode for better reliability
@@ -65,6 +69,27 @@ export interface IStorage {
   createService(service: InsertService & { userId: number }): Promise<Service>;
   updateService(id: number, service: Partial<Service>): Promise<Service | undefined>;
   deleteService(id: number): Promise<boolean>;
+
+  // API Credentials management
+  getApiCredential(id: number): Promise<ApiCredential | undefined>;
+  getApiCredentialsByUserId(userId: number): Promise<ApiCredential[]>;
+  createApiCredential(credential: InsertApiCredential): Promise<ApiCredential>;
+  updateApiCredential(id: number, credential: Partial<ApiCredential>): Promise<ApiCredential | undefined>;
+  deleteApiCredential(id: number): Promise<boolean>;
+
+  // Background Jobs management
+  getBackgroundJob(id: number): Promise<BackgroundJob | undefined>;
+  getBackgroundJobsByUserId(userId: number): Promise<BackgroundJob[]>;
+  createBackgroundJob(job: InsertBackgroundJob): Promise<BackgroundJob>;
+  updateBackgroundJob(id: number, job: Partial<BackgroundJob>): Promise<BackgroundJob | undefined>;
+  deleteBackgroundJob(id: number): Promise<boolean>;
+
+  // Data Cache management
+  getDataCache(userId: number, cacheKey: string): Promise<DataCache | undefined>;
+  getDataCachesByUserId(userId: number): Promise<DataCache[]>;
+  createDataCache(cache: InsertDataCache): Promise<DataCache>;
+  updateDataCache(id: number, cache: Partial<DataCache>): Promise<DataCache | undefined>;
+  deleteDataCache(id: number): Promise<boolean>;
 }
 
 export class DbStorage implements IStorage {
@@ -239,6 +264,94 @@ export class DbStorage implements IStorage {
 
   async deleteService(id: number): Promise<boolean> {
     const result = await db.delete(services).where(eq(services.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // API Credentials management
+  async getApiCredential(id: number): Promise<ApiCredential | undefined> {
+    const [credential] = await db.select().from(apiCredentials).where(eq(apiCredentials.id, id));
+    return credential;
+  }
+
+  async getApiCredentialsByUserId(userId: number): Promise<ApiCredential[]> {
+    return await db.select().from(apiCredentials).where(eq(apiCredentials.userId, userId));
+  }
+
+  async createApiCredential(credential: InsertApiCredential): Promise<ApiCredential> {
+    const [created] = await db.insert(apiCredentials).values(credential).returning();
+    return created;
+  }
+
+  async updateApiCredential(id: number, credential: Partial<ApiCredential>): Promise<ApiCredential | undefined> {
+    const [updated] = await db.update(apiCredentials)
+      .set({ ...credential, updatedAt: new Date() })
+      .where(eq(apiCredentials.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteApiCredential(id: number): Promise<boolean> {
+    const result = await db.delete(apiCredentials).where(eq(apiCredentials.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Background Jobs management
+  async getBackgroundJob(id: number): Promise<BackgroundJob | undefined> {
+    const [job] = await db.select().from(backgroundJobs).where(eq(backgroundJobs.id, id));
+    return job;
+  }
+
+  async getBackgroundJobsByUserId(userId: number): Promise<BackgroundJob[]> {
+    return await db.select().from(backgroundJobs).where(eq(backgroundJobs.userId, userId));
+  }
+
+  async createBackgroundJob(job: InsertBackgroundJob): Promise<BackgroundJob> {
+    const [created] = await db.insert(backgroundJobs).values({
+      ...job,
+      nextRun: new Date(Date.now() + 60000),
+    }).returning();
+    return created;
+  }
+
+  async updateBackgroundJob(id: number, job: Partial<BackgroundJob>): Promise<BackgroundJob | undefined> {
+    const [updated] = await db.update(backgroundJobs)
+      .set({ ...job, updatedAt: new Date() })
+      .where(eq(backgroundJobs.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteBackgroundJob(id: number): Promise<boolean> {
+    const result = await db.delete(backgroundJobs).where(eq(backgroundJobs.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Data Cache management
+  async getDataCache(userId: number, cacheKey: string): Promise<DataCache | undefined> {
+    const [cache] = await db.select().from(dataCache)
+      .where(and(eq(dataCache.userId, userId), eq(dataCache.cacheKey, cacheKey)));
+    return cache;
+  }
+
+  async getDataCachesByUserId(userId: number): Promise<DataCache[]> {
+    return await db.select().from(dataCache).where(eq(dataCache.userId, userId));
+  }
+
+  async createDataCache(cache: InsertDataCache): Promise<DataCache> {
+    const [created] = await db.insert(dataCache).values(cache).returning();
+    return created;
+  }
+
+  async updateDataCache(id: number, cache: Partial<DataCache>): Promise<DataCache | undefined> {
+    const [updated] = await db.update(dataCache)
+      .set(cache)
+      .where(eq(dataCache.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteDataCache(id: number): Promise<boolean> {
+    const result = await db.delete(dataCache).where(eq(dataCache.id, id));
     return (result.rowCount || 0) > 0;
   }
 }

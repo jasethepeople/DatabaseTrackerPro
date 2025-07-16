@@ -7,6 +7,7 @@ import Terminal from "@/components/editor/terminal";
 import ToolMarketplace from "@/components/tools/tool-marketplace";
 import ServiceDashboard from "@/components/services/service-dashboard";
 import HardwareMonitor from "@/components/monitoring/hardware-monitor";
+import AISuggestions from "@/components/editor/ai-suggestions";
 
 export default function Dashboard() {
   const [activeRightTab, setActiveRightTab] = useState<"tools" | "services" | "monitor">("tools");
@@ -78,6 +79,14 @@ export default function Dashboard() {
           <span className="text-lg">$</span>
         </button>
       )}
+      {/* AI Suggestions */}
+      <AISuggestions 
+        currentFile={currentFile}
+        onApplySuggestion={(suggestion) => {
+          console.log("Applying suggestion:", suggestion);
+          // In a real implementation, this would integrate with the code editor
+        }}
+      />
     </div>
   );
 }
