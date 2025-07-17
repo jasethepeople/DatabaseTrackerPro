@@ -995,6 +995,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Venice AI Routes
+  app.get('/api/venice/models', authenticateUser, async (req, res) => {
+    try {
+      const { veniceAIService } = await import('./services/venice-ai-service');
+      await veniceAIService.initialize();
+      const models = await veniceAIService.listModels();
+      res.json({ success: true, models });
+    } catch (error) {
+      console.error('Failed to list Venice models:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/venice/generate', authenticateUser, async (req: any, res) => {
+    try {
+      const { veniceAIService } = await import('./services/venice-ai-service');
+      await veniceAIService.initialize();
+      
+      const { prompt, language, framework, type, includeTests, includeDocumentation } = req.body;
+      
+      const result = await veniceAIService.generateCode(prompt, {
+        language,
+        framework,
+        type,
+        includeTests,
+        includeDocumentation
+      });
+      
+      res.json({ success: true, ...result });
+    } catch (error) {
+      console.error('Venice code generation failed:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
+  app.post('/api/venice/review', authenticateUser, async (req: any, res) => {
+    try {
+      const { veniceAIService } = await import('./services/venice-ai-service');
+      await veniceAIService.initialize();
+      
+      const { code, language } = req.body;
+      const review = await veniceAIService.reviewCode(code, language);
+      
+      res.json({ success: true, review });
+    } catch (error) {
+      console.error('Venice code review failed:', error);
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  });
+
   // AI Coding Assistant endpoints
   app.get('/api/ai/coding-suggestions', authenticateUser, async (req: any, res) => {
     try {
@@ -1072,7 +1122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Agent - Code Generation, Deployment & Integration
+  // AI Agent - Code Generation, Deployment & Integration with Venice AI
   app.post("/api/ai/chat", authenticateUser, async (req, res) => {
     try {
       const { message } = req.body;
@@ -1081,7 +1131,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      console.log(`[AI Agent] Processing command: ${message}`);
+      console.log(`[AI Agent] Processing command with Venice AI: ${message}`);
+      
+      // Import Venice AI service
+      const { veniceAIService } = await import('./services/venice-ai-service');
+      await veniceAIService.initialize();
       
       const msgLower = message.toLowerCase();
       let response = "";
@@ -1090,19 +1144,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let deploymentResult = null;
       let integrationResult = null;
 
-      // Code Generation Commands
+      // Code Generation Commands using Venice AI
       if (msgLower.includes("generate") || msgLower.includes("create") || msgLower.includes("build")) {
-        if (msgLower.includes("api") || msgLower.includes("endpoint")) {
-          const apiCode = generateAPICode(message);
-          response = `✅ Generated complete API endpoint code:\n\n${apiCode.description}`;
-          generatedCode = apiCode.code;
+        try {
+          let codeType: 'api' | 'frontend' | 'backend' | 'fullstack' | 'script' | 'class' | 'function' = 'function';
+          let framework = undefined;
+          
+          // Determine code type and framework
+          if (msgLower.includes("api") || msgLower.includes("endpoint")) {
+            codeType = 'api';
+            framework = msgLower.includes("express") ? 'express' : msgLower.includes("fastapi") ? 'fastapi' : 'express';
+          } else if (msgLower.includes("website") || msgLower.includes("web") || msgLower.includes("frontend")) {
+            codeType = 'frontend';
+            framework = msgLower.includes("react") ? 'react' : msgLower.includes("vue") ? 'vue' : 'react';
+          } else if (msgLower.includes("backend")) {
+            codeType = 'backend';
+            framework = msgLower.includes("node") ? 'node' : msgLower.includes("python") ? 'python' : 'node';
+          } else if (msgLower.includes("fullstack")) {
+            codeType = 'fullstack';
+          } else if (msgLower.includes("script") || msgLower.includes("automation")) {
+            codeType = 'script';
+          } else if (msgLower.includes("class")) {
+            codeType = 'class';
+          }
+          
+          // Detect language
+          let language = 'typescript';
+          if (msgLower.includes("python")) language = 'python';
+          else if (msgLower.includes("javascript") || msgLower.includes("js")) language = 'javascript';
+          else if (msgLower.includes("java")) language = 'java';
+          else if (msgLower.includes("c++") || msgLower.includes("cpp")) language = 'cpp';
+          else if (msgLower.includes("go") || msgLower.includes("golang")) language = 'go';
+          else if (msgLower.includes("rust")) language = 'rust';
+          
+          // Generate code with Venice AI
+          const veniceResult = await veniceAIService.generateCode(message, {
+            language,
+            framework,
+            type: codeType,
+            includeTests: msgLower.includes("test"),
+            includeDocumentation: msgLower.includes("doc") || msgLower.includes("comment")
+          });
+          
+          response = `✅ Generated with Venice AI (Uncensored):\n\n${veniceResult.description}\n\nLanguage: ${veniceResult.language}`;
+          if (veniceResult.dependencies?.length) {
+            response += `\nDependencies: ${veniceResult.dependencies.join(', ')}`;
+          }
+          generatedCode = veniceResult.code;
           actionTaken = true;
-        } else if (msgLower.includes("website") || msgLower.includes("web") || msgLower.includes("app")) {
-          const webCode = generateWebAppCode(message);
-          response = `✅ Generated complete web application:\n\n${webCode.description}`;
-          generatedCode = webCode.code;
-          actionTaken = true;
-        } else if (msgLower.includes("script") || msgLower.includes("automation")) {
+        } catch (veniceError) {
+          console.error('Venice AI generation failed, using fallback:', veniceError);
+          // Fallback to original generation
+          if (msgLower.includes("api") || msgLower.includes("endpoint")) {
+            const apiCode = generateAPICode(message);
+            response = `✅ Generated complete API endpoint code:\n\n${apiCode.description}`;
+            generatedCode = apiCode.code;
+            actionTaken = true;
+          } else if (msgLower.includes("website") || msgLower.includes("web") || msgLower.includes("app")) {
+            const webCode = generateWebAppCode(message);
+            response = `✅ Generated complete web application:\n\n${webCode.description}`;
+            generatedCode = webCode.code;
+            actionTaken = true;
+          }
+        }
+      } else if (msgLower.includes("script") || msgLower.includes("automation")) {
           const scriptCode = generateAutomationScript(message);
           response = `✅ Generated automation script:\n\n${scriptCode.description}`;
           generatedCode = scriptCode.code;
@@ -1118,10 +1223,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           generatedCode = genericCode.code;
           actionTaken = true;
         }
-      }
       
       // Deployment Commands
-      else if (msgLower.includes("deploy") || msgLower.includes("publish") || msgLower.includes("launch")) {
+      if (msgLower.includes("deploy") || msgLower.includes("publish") || msgLower.includes("launch")) {
         if (msgLower.includes("heroku")) {
           deploymentResult = await deployToHeroku(message);
           response = `🚀 Heroku deployment initiated:\n\n${deploymentResult.message}`;

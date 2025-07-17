@@ -25,6 +25,7 @@ import FileExplorer from "./pages/file-explorer";
 import DebugDashboard from "./pages/debug-dashboard";
 import AICodingAssistant from "./pages/ai-coding-assistant";
 import DeploymentDashboard from "./pages/deployment-dashboard";
+import VeniceAIChat from "./pages/venice-ai-chat";
 import { Navigation } from "./components/navigation";
 import NotFound from "./pages/not-found";
 
@@ -108,6 +109,7 @@ function Router() {
           <Route path="/file-explorer" component={FileExplorer} />
           <Route path="/debug-dashboard" component={DebugDashboard} />
           <Route path="/deployment" component={DeploymentDashboard} />
+          <Route path="/venice-ai" component={VeniceAIChat} />
           <Route path="/ide" component={Dashboard} />
           <Route path="/" component={WorkingDashboard} />
           <Route component={NotFound} />

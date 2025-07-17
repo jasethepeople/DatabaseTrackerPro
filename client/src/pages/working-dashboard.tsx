@@ -121,6 +121,20 @@ export default function WorkingDashboard() {
 
           <Card>
             <CardHeader>
+              <CardTitle>Venice AI Generator</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Uncensored AI code generation with Venice
+              </p>
+              <Link href="/venice-ai">
+                <Button className="w-full">Generate Code</Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Environment Snapshots</CardTitle>
             </CardHeader>
             <CardContent>
