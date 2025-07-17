@@ -41,7 +41,7 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const headers: Record<string, string> = getAuthHeaders();
     
-    const res = await fetch(queryKey.join("/") as string, {
+    const res = await fetch(queryKey.join("") as string, {
       headers,
       credentials: "include",
     });

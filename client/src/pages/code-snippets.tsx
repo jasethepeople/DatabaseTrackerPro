@@ -402,6 +402,10 @@ export default function CodeSnippets() {
 
   const { data: snippets = [], isLoading } = useQuery({
     queryKey: ['/api/code-snippets'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/code-snippets');
+      return response.json();
+    },
   });
 
   const generateSnippetMutation = useMutation({
