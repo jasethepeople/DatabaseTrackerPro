@@ -1163,168 +1163,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      console.log(`[AI Agent] Processing command with Venice AI: ${message}`);
-      
-      // Import Venice AI service
-      const { veniceAIService } = await import('./services/venice-ai-service');
-      await veniceAIService.initialize();
+      console.log(`[AI Agent] Processing command: ${message}`);
       
       const msgLower = message.toLowerCase();
       let response = "";
       let actionTaken = false;
       let generatedCode = null;
-      let deploymentResult = null;
-      let integrationResult = null;
 
-      // Code Generation Commands using Venice AI
-      if (msgLower.includes("generate") || msgLower.includes("create") || msgLower.includes("build")) {
+      // Try Venice AI first for code generation
+      if (msgLower.includes("generate") || msgLower.includes("create") || msgLower.includes("build") || msgLower.includes("code")) {
         try {
-          let codeType: 'api' | 'frontend' | 'backend' | 'fullstack' | 'script' | 'class' | 'function' = 'function';
-          let framework = undefined;
+          const { veniceAIService } = await import('./services/venice-ai-service');
+          await veniceAIService.initialize();
           
-          // Determine code type and framework
-          if (msgLower.includes("api") || msgLower.includes("endpoint")) {
-            codeType = 'api';
-            framework = msgLower.includes("express") ? 'express' : msgLower.includes("fastapi") ? 'fastapi' : 'express';
-          } else if (msgLower.includes("website") || msgLower.includes("web") || msgLower.includes("frontend")) {
-            codeType = 'frontend';
-            framework = msgLower.includes("react") ? 'react' : msgLower.includes("vue") ? 'vue' : 'react';
-          } else if (msgLower.includes("backend")) {
-            codeType = 'backend';
-            framework = msgLower.includes("node") ? 'node' : msgLower.includes("python") ? 'python' : 'node';
-          } else if (msgLower.includes("fullstack")) {
-            codeType = 'fullstack';
-          } else if (msgLower.includes("script") || msgLower.includes("automation")) {
-            codeType = 'script';
-          } else if (msgLower.includes("class")) {
-            codeType = 'class';
-          }
-          
-          // Detect language
+          // Simple language detection
           let language = 'typescript';
           if (msgLower.includes("python")) language = 'python';
           else if (msgLower.includes("javascript") || msgLower.includes("js")) language = 'javascript';
           else if (msgLower.includes("java")) language = 'java';
-          else if (msgLower.includes("c++") || msgLower.includes("cpp")) language = 'cpp';
-          else if (msgLower.includes("go") || msgLower.includes("golang")) language = 'go';
+          else if (msgLower.includes("go")) language = 'go';
           else if (msgLower.includes("rust")) language = 'rust';
           
-          // Generate code with Venice AI
+          // Simple type detection
+          let codeType = 'function';
+          if (msgLower.includes("api")) codeType = 'api';
+          else if (msgLower.includes("website") || msgLower.includes("frontend")) codeType = 'frontend';
+          else if (msgLower.includes("backend")) codeType = 'backend';
+          else if (msgLower.includes("class")) codeType = 'class';
+          
           const veniceResult = await veniceAIService.generateCode(message, {
             language,
-            framework,
             type: codeType,
             includeTests: msgLower.includes("test"),
-            includeDocumentation: msgLower.includes("doc") || msgLower.includes("comment")
+            includeDocumentation: true
           });
           
-          response = `✅ Generated with Venice AI (Uncensored):\n\n${veniceResult.description}\n\nLanguage: ${veniceResult.language}`;
+          response = `I've generated the code for you using Venice AI:\n\n${veniceResult.description}\n\nLanguage: ${veniceResult.language}`;
           if (veniceResult.dependencies?.length) {
             response += `\nDependencies: ${veniceResult.dependencies.join(', ')}`;
           }
           generatedCode = veniceResult.code;
           actionTaken = true;
-        } catch (veniceError) {
-          console.error('Venice AI generation failed, using fallback:', veniceError);
-          // Fallback to original generation
-          if (msgLower.includes("api") || msgLower.includes("endpoint")) {
-            const apiCode = generateAPICode(message);
-            response = `✅ Generated complete API endpoint code:\n\n${apiCode.description}`;
-            generatedCode = apiCode.code;
-            actionTaken = true;
-          } else if (msgLower.includes("website") || msgLower.includes("web") || msgLower.includes("app")) {
-            const webCode = generateWebAppCode(message);
-            response = `✅ Generated complete web application:\n\n${webCode.description}`;
-            generatedCode = webCode.code;
-            actionTaken = true;
-          }
-        }
-      } else if (msgLower.includes("script") || msgLower.includes("automation")) {
-          const scriptCode = generateAutomationScript(message);
-          response = `✅ Generated automation script:\n\n${scriptCode.description}`;
-          generatedCode = scriptCode.code;
-          actionTaken = true;
-        } else if (msgLower.includes("database") || msgLower.includes("schema")) {
-          const dbCode = generateDatabaseSchema(message);
-          response = `✅ Generated database schema and migration:\n\n${dbCode.description}`;
-          generatedCode = dbCode.code;
-          actionTaken = true;
-        } else {
-          const genericCode = generateGenericCode(message);
-          response = `✅ Generated code solution:\n\n${genericCode.description}`;
-          generatedCode = genericCode.code;
-          actionTaken = true;
-        }
-      
-      // Deployment Commands
-      if (msgLower.includes("deploy") || msgLower.includes("publish") || msgLower.includes("launch")) {
-        if (msgLower.includes("heroku")) {
-          deploymentResult = await deployToHeroku(message);
-          response = `🚀 Heroku deployment initiated:\n\n${deploymentResult.message}`;
-          actionTaken = true;
-        } else if (msgLower.includes("vercel") || msgLower.includes("netlify")) {
-          deploymentResult = await deployToVercel(message);
-          response = `🚀 Vercel deployment initiated:\n\n${deploymentResult.message}`;
-          actionTaken = true;
-        } else if (msgLower.includes("docker")) {
-          deploymentResult = await deployToDocker(message);
-          response = `🐳 Docker deployment created:\n\n${deploymentResult.message}`;
-          actionTaken = true;
-        } else {
-          deploymentResult = await deployToMultiplePlatforms(message);
-          response = `🚀 Multi-platform deployment initiated:\n\n${deploymentResult.message}`;
-          actionTaken = true;
+        } catch (error) {
+          console.error('Venice AI error:', error);
+          response = "I had an issue generating code. Let me help you with general guidance instead.";
         }
       }
       
-      // Integration Commands
-      else if (msgLower.includes("integrate") || msgLower.includes("connect") || msgLower.includes("api")) {
-        if (msgLower.includes("github") || msgLower.includes("git")) {
-          integrationResult = await integrateGitHub(message);
-          response = `🔗 GitHub integration completed:\n\n${integrationResult.message}`;
-          actionTaken = true;
-        } else if (msgLower.includes("database") || msgLower.includes("postgres") || msgLower.includes("mysql")) {
-          integrationResult = await integrateDatabaseConnection(message);
-          response = `💾 Database integration completed:\n\n${integrationResult.message}`;
-          actionTaken = true;
-        } else if (msgLower.includes("payment") || msgLower.includes("stripe")) {
-          integrationResult = await integratePaymentSystem(message);
-          response = `💳 Payment system integration completed:\n\n${integrationResult.message}`;
-          actionTaken = true;
-        } else {
-          integrationResult = await integrateGenericAPI(message);
-          response = `🔌 API integration completed:\n\n${integrationResult.message}`;
-          actionTaken = true;
-        }
-      }
-      
-      // Analysis Commands
-      else if (msgLower.includes("analyze") || msgLower.includes("scan") || msgLower.includes("audit")) {
-        const analysisResult = await performCodeAnalysis(message);
-        response = `🔍 Analysis completed:\n\n${analysisResult.message}`;
+      // Simple helpful responses for other commands
+      else if (msgLower.includes("deploy")) {
+        response = `To deploy your application, I recommend:
+        
+1. **Heroku**: Great for Node.js/Python apps - use 'git push heroku main'
+2. **Vercel**: Perfect for Next.js/React - run 'vercel' command
+3. **Docker**: Create a Dockerfile and use 'docker build/push'
+
+Would you like specific deployment instructions for your project?`;
         actionTaken = true;
       }
       
-      // Default response for general conversation
-      else {
-        response = `I'm an AI agent capable of real actions. I can:
+      else if (msgLower.includes("help") || msgLower.includes("what can")) {
+        response = `I'm your AI assistant! I can help you with:
 
-**Generate Code**: "generate an API for user management" → actual working code
-**Deploy Applications**: "deploy to heroku" → live deployment with URL
-**Integrate Services**: "integrate stripe payments" → working payment system
-**Analyze Systems**: "analyze my code for vulnerabilities" → security report
+• **Code Generation**: Ask me to generate any code - APIs, websites, scripts, functions
+• **Project Guidance**: Get help with architecture, best practices, debugging
+• **Tool Integration**: Assistance with Git, databases, payment systems
+• **Deployment Help**: Guidance for deploying to various platforms
 
-What would you like me to build, deploy, or integrate?`;
+Just describe what you need and I'll help you build it!`;
       }
       
-      console.log(`[AI Agent] Action taken: ${actionTaken}, Response: ${response.substring(0, 100)}...`);
+      else {
+        // General conversational response
+        response = `I understand you're asking about "${message}". I'm here to help with coding, deployment, and development tasks. Could you be more specific about what you'd like me to help you build or solve?`;
+      }
+      
+      console.log(`[AI Agent] Response generated`);
       
       res.json({ 
         response,
         actionTaken,
         generatedCode,
-        deploymentResult,
-        integrationResult,
         timestamp: new Date().toISOString(),
         agent: true
       });
