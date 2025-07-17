@@ -56,13 +56,13 @@ jobs:
         
         # Deploy to AWS
         sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
-          --stack-name Python-stack \
+          --stack-name my-python-project-stack \
           --capabilities CAPABILITY_IAM \
           --region us-east-1
     
     - name: Get deployment URL
       run: |
         aws cloudformation describe-stacks \
-          --stack-name Python-stack \
+          --stack-name my-python-project-stack \
           --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
           --output text

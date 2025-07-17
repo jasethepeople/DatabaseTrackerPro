@@ -1170,8 +1170,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let actionTaken = false;
       let generatedCode = null;
 
+      // Handle credential storage requests
+      if (msgLower.includes("github credentials") && (msgLower.includes("use") || msgLower.includes("save"))) {
+        try {
+          // Extract email from the message
+          const emailMatch = message.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
+          // Extract password (assuming it follows the email)
+          const passwordMatch = message.match(/\s+([A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+)\s+/g);
+          
+          if (emailMatch && passwordMatch && passwordMatch.length > 0) {
+            const email = emailMatch[1];
+            const password = passwordMatch[0].trim();
+            
+            const { credentialStorage } = await import('./services/credential-storage-service');
+            await credentialStorage.saveGitHubCredentials(email, password);
+            
+            response = `✅ GitHub credentials saved successfully!
+
+Your credentials have been securely encrypted and stored for future use.
+
+Now running CI/CD pipeline setup with your GitHub account...`;
+            
+            // Now run the CI/CD setup with the saved credentials
+            const { autoSetupCICD } = await import('./services/cicd-automation-service');
+            const projectName = 'my-python-project';
+            const projectPath = './workspace/my-python-project';
+            
+            const pipelineResult = await autoSetupCICD(projectPath, projectName);
+            
+            if (pipelineResult.success) {
+              response += `\n\n${pipelineResult.summary}`;
+            }
+            
+            actionTaken = true;
+          } else {
+            response = `I couldn't extract the credentials from your message. Please provide them in the format:
+"Use GitHub credentials: email@example.com password123"`;
+          }
+        } catch (error) {
+          console.error('Credential storage error:', error);
+          response = `There was an error saving the credentials: ${error.message}`;
+        }
+      }
       // Handle CI/CD pipeline requests automatically
-      if (msgLower.includes("ci/cd") || msgLower.includes("pipeline") || msgLower.includes("github actions")) {
+      else if (msgLower.includes("ci/cd") || msgLower.includes("pipeline") || msgLower.includes("github actions")) {
         if (msgLower.includes("set up") || msgLower.includes("create") || msgLower.includes("configure")) {
           try {
             const { autoSetupCICD } = await import('./services/cicd-automation-service');

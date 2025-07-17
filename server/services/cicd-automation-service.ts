@@ -3,6 +3,7 @@ import { execSync } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
+import { credentialStorage } from './credential-storage-service';
 
 interface CICDConfig {
   projectPath: string;
@@ -87,21 +88,49 @@ export class CICDAutomationService {
   private async scanForCredentials(): Promise<void> {
     console.log('Scanning for credentials...');
     
-    // Check environment variables
+    // First check stored credentials
+    const storedGitHubToken = await credentialStorage.getGitHubToken();
+    const storedGitHubEmail = await credentialStorage.getGitHubEmail();
+    
+    if (storedGitHubToken) {
+      console.log('Using stored GitHub credentials');
+      this.config.githubToken = storedGitHubToken;
+      
+      // Set git config if email is available
+      if (storedGitHubEmail) {
+        try {
+          execSync(`git config --global user.email "${storedGitHubEmail}"`);
+          execSync(`git config --global user.name "CI/CD Automation"`);
+        } catch (error) {
+          console.log('Failed to set git config:', error.message);
+        }
+      }
+    }
+    
+    // Check environment variables if no stored token
     if (!this.config.githubToken) {
       this.config.githubToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
     }
     
+    // Check stored AWS credentials
+    const storedAWSCreds = await credentialStorage.getAWSCredentials();
+    if (storedAWSCreds) {
+      console.log('Using stored AWS credentials');
+      this.config.awsAccessKeyId = storedAWSCreds.accessKeyId;
+      this.config.awsSecretAccessKey = storedAWSCreds.secretAccessKey;
+      this.config.awsRegion = storedAWSCreds.region;
+    }
+    
+    // Check environment for AWS if not stored
     if (!this.config.awsAccessKeyId) {
       this.config.awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
       this.config.awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
     }
     
-    // If no GitHub token found, create a demo token for testing
+    // If still no GitHub token, create demo token
     if (!this.config.githubToken) {
       console.log('No GitHub token found - generating demo credentials for testing');
       this.config.githubToken = 'ghp_' + crypto.randomBytes(20).toString('hex');
-      // In a real scenario, this would trigger an OAuth flow or credential creation
     }
     
     // If no AWS credentials found, use demo credentials
@@ -109,34 +138,6 @@ export class CICDAutomationService {
       console.log('No AWS credentials found - using demo credentials');
       this.config.awsAccessKeyId = 'AKIAIOSFODNN7EXAMPLE';
       this.config.awsSecretAccessKey = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
-    }
-    
-    // Check common credential files
-    try {
-      const gitConfig = await fs.readFile(path.join(process.env.HOME || '', '.gitconfig'), 'utf-8');
-      // Parse git config for potential tokens
-    } catch (error) {
-      // Git config not found
-    }
-    
-    // Check AWS credentials file
-    try {
-      const awsCredentials = await fs.readFile(
-        path.join(process.env.HOME || '', '.aws', 'credentials'), 
-        'utf-8'
-      );
-      // Parse AWS credentials
-      const lines = awsCredentials.split('\n');
-      for (const line of lines) {
-        if (line.includes('aws_access_key_id') && !this.config.awsAccessKeyId) {
-          this.config.awsAccessKeyId = line.split('=')[1]?.trim();
-        }
-        if (line.includes('aws_secret_access_key') && !this.config.awsSecretAccessKey) {
-          this.config.awsSecretAccessKey = line.split('=')[1]?.trim();
-        }
-      }
-    } catch (error) {
-      // AWS credentials not found
     }
     
     // Initialize Octokit if we have a token

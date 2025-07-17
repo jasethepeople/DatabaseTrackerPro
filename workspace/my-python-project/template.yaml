@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Python - Automated deployment
+Description: my-python-project - Automated deployment
 
 Globals:
   Function:
@@ -12,7 +12,7 @@ Resources:
   MainFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: Python-function
+      FunctionName: my-python-project-function
       CodeUri: ./
       Handler: main.lambda_handler
       Events:
