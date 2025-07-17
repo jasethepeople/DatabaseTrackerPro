@@ -12,60 +12,89 @@ export default function DownloadDeployment() {
         </p>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Deployment Package
-          </CardTitle>
-          <CardDescription>
-            ai-agent-deployment.tar.gz (380 KB)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <h3 className="font-semibold flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                What's Included
-              </h3>
-              <ul className="text-sm space-y-1 ml-6">
-                <li>• Complete source code</li>
-                <li>• Venice AI integration</li>
-                <li>• Security tools (Metasploit, OSINT)</li>
-                <li>• Windows deployment scripts</li>
-                <li>• Documentation & guides</li>
-              </ul>
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Shield className="h-4 w-4 text-blue-500" />
-                Features Ready
-              </h3>
-              <ul className="text-sm space-y-1 ml-6">
-                <li>• 100% unrestricted operation</li>
-                <li>• Local dev environments</li>
-                <li>• FBI forensics tools</li>
-                <li>• Live vulnerability DB</li>
-                <li>• Self-repair system</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-4">
+      <div className="grid gap-6 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Complete Project Package
+            </CardTitle>
+            <CardDescription>
+              complete-ai-agent.tar.gz (35 MB) - Full project with all files
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Contains the entire project directory including all source code, configurations, and documentation.
+            </p>
             <a 
-              href="/api/download/deployment-package" 
+              href="/api/download/complete-package" 
               download
               className="inline-block"
             >
-              <Button size="lg" className="w-full md:w-auto">
+              <Button size="lg" variant="default">
                 <Download className="mr-2 h-5 w-5" />
-                Download Package (380 KB)
+                Download Complete Package (35 MB)
               </Button>
             </a>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Lightweight Deployment Package
+            </CardTitle>
+            <CardDescription>
+              ai-agent-deployment.tar.gz (380 KB) - Essential files only
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  What's Included
+                </h3>
+                <ul className="text-sm space-y-1 ml-6">
+                  <li>• Complete source code</li>
+                  <li>• Venice AI integration</li>
+                  <li>• Security tools (Metasploit, OSINT)</li>
+                  <li>• Windows deployment scripts</li>
+                  <li>• Documentation & guides</li>
+                </ul>
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-blue-500" />
+                  Features Ready
+                </h3>
+                <ul className="text-sm space-y-1 ml-6">
+                  <li>• 100% unrestricted operation</li>
+                  <li>• Local dev environments</li>
+                  <li>• FBI forensics tools</li>
+                  <li>• Live vulnerability DB</li>
+                  <li>• Self-repair system</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <a 
+                href="/api/download/deployment-package" 
+                download
+                className="inline-block"
+              >
+                <Button size="lg" variant="outline">
+                  <Download className="mr-2 h-5 w-5" />
+                  Download Lightweight (380 KB)
+                </Button>
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid md:grid-cols-2 gap-6">
         <Card>

@@ -2280,6 +2280,20 @@ What would you like me to build, deploy, or integrate?`;
     }
   });
 
+  // Download complete package
+  app.get("/api/download/complete-package", (req, res) => {
+    const packagePath = "/tmp/complete-ai-agent.tar.gz";
+    
+    if (fs.existsSync(packagePath)) {
+      res.setHeader('Content-Type', 'application/gzip');
+      res.setHeader('Content-Disposition', 'attachment; filename="complete-ai-agent.tar.gz"');
+      const fileStream = fs.createReadStream(packagePath);
+      fileStream.pipe(res);
+    } else {
+      res.status(404).json({ error: "Complete package not found. Please regenerate." });
+    }
+  });
+
 
 
 // Helper functions for code analysis and refactoring
