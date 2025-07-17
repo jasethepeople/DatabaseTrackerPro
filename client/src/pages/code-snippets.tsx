@@ -476,9 +476,9 @@ export default function CodeSnippets() {
       snippet.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       snippet.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesLanguage = !selectedLanguage || snippet.language === selectedLanguage;
-    const matchesCategory = !selectedCategory || snippet.category === selectedCategory;
-    const matchesDifficulty = !selectedDifficulty || snippet.difficulty === selectedDifficulty;
+    const matchesLanguage = !selectedLanguage || selectedLanguage === 'all' || snippet.language === selectedLanguage;
+    const matchesCategory = !selectedCategory || selectedCategory === 'all' || snippet.category === selectedCategory;
+    const matchesDifficulty = !selectedDifficulty || selectedDifficulty === 'all' || snippet.difficulty === selectedDifficulty;
     
     return matchesSearch && matchesLanguage && matchesCategory && matchesDifficulty;
   });
@@ -526,7 +526,7 @@ export default function CodeSnippets() {
                   <SelectValue placeholder="Language" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Languages</SelectItem>
+                  <SelectItem value="all">All Languages</SelectItem>
                   {languages.map(lang => (
                     <SelectItem key={lang} value={lang}>{lang}</SelectItem>
                   ))}
@@ -538,7 +538,7 @@ export default function CodeSnippets() {
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {categories.map(cat => (
                     <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                   ))}
@@ -550,7 +550,7 @@ export default function CodeSnippets() {
                   <SelectValue placeholder="Difficulty" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Levels</SelectItem>
+                  <SelectItem value="all">All Levels</SelectItem>
                   {difficulties.map(diff => (
                     <SelectItem key={diff} value={diff}>{diff}</SelectItem>
                   ))}
