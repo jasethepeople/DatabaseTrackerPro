@@ -107,7 +107,7 @@ export default function VeniceAIChat() {
     generateMutation.mutate({
       prompt,
       language,
-      framework: framework || undefined,
+      framework: framework === 'none' ? undefined : framework || undefined,
       type: codeType,
       includeTests,
       includeDocumentation
@@ -225,7 +225,7 @@ export default function VeniceAIChat() {
                   <SelectValue placeholder="None" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   <SelectItem value="react">React</SelectItem>
                   <SelectItem value="vue">Vue</SelectItem>
                   <SelectItem value="angular">Angular</SelectItem>
