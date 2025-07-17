@@ -236,6 +236,31 @@ export const accountCreationAttempts = pgTable("account_creation_attempts", {
   completedAt: timestamp("completed_at"),
 });
 
+// Universal Credentials table
+export const credentials = pgTable("credentials", {
+  id: serial("id").primaryKey(),
+  service: varchar("service", { length: 255 }).notNull(),
+  type: varchar("type", { length: 100 }).notNull(),
+  identifier: varchar("identifier", { length: 255 }).notNull(),
+  encryptedValue: text("encrypted_value").notNull(),
+  metadata: jsonb("metadata").default({}),
+  autoDetected: boolean("auto_detected").default(false),
+  useCount: integer("use_count").default(0),
+  lastUsed: timestamp("last_used").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  userId: integer("user_id").references(() => users.id)
+});
+
+// Credential Usage Log
+export const credentialUsageLog = pgTable("credential_usage_log", {
+  id: serial("id").primaryKey(),
+  credentialId: integer("credential_id").references(() => credentials.id).notNull(),
+  userId: integer("user_id").references(() => users.id),
+  usedAt: timestamp("used_at").defaultNow().notNull(),
+  purpose: text("purpose"),
+  success: boolean("success").default(true)
+});
+
 // Insert schemas for new tables
 export const insertApiCredentialSchema = createInsertSchema(apiCredentials).omit({
   id: true,

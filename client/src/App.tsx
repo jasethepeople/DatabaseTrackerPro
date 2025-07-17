@@ -33,6 +33,7 @@ import DatabaseBrowser from "./pages/database-browser";
 import VersionControl from "./pages/version-control";
 import LocalDevEnvironment from "./pages/local-dev-environment";
 import DownloadDeployment from "./pages/download-deployment";
+import CredentialManager from "./pages/credential-manager";
 import { Navigation } from "./components/navigation";
 import NotFound from "./pages/not-found";
 
@@ -124,6 +125,7 @@ function Router() {
           <Route path="/version-control" component={VersionControl} />
           <Route path="/local-dev-environment" component={LocalDevEnvironment} />
           <Route path="/download" component={DownloadDeployment} />
+          <Route path="/credentials" component={CredentialManager} />
           <Route path="/ide" component={Dashboard} />
           <Route path="/" component={WorkingDashboard} />
           <Route component={NotFound} />

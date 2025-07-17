@@ -18,6 +18,7 @@ import { environmentSnapshotService } from "./services/environment-snapshot-serv
 import { securityFrameworkService } from "./services/security-framework-service";
 import { debugSandbox } from './services/debug-sandbox';
 import { selfRepairService } from './services/self-repair-service';
+import { universalCredentialManager } from './services/universal-credential-manager';
 import * as fs from 'fs';
 import * as os from 'os';
 
@@ -1154,6 +1155,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Universal Credential Management Routes
+  app.get('/api/credentials', authenticateUser, async (req: any, res) => {
+    try {
+      const { service, type } = req.query;
+      const credentials = await universalCredentialManager.listCredentials({
+        service: service as string,
+        type: type as string
+      });
+      
+      // Don't send encrypted values to frontend
+      const sanitized = credentials.map(cred => ({
+        id: cred.id,
+        service: cred.service,
+        type: cred.type,
+        identifier: cred.identifier,
+        metadata: cred.metadata,
+        autoDetected: cred.autoDetected,
+        useCount: cred.useCount,
+        lastUsed: cred.lastUsed,
+        createdAt: cred.createdAt
+      }));
+      
+      res.json(sanitized);
+    } catch (error) {
+      console.error('Failed to list credentials:', error);
+      res.status(500).json({ error: 'Failed to list credentials' });
+    }
+  });
+
+  app.post('/api/credentials/scan', authenticateUser, async (req: any, res) => {
+    try {
+      // Scan common locations for credentials
+      const detected = await universalCredentialManager.scanCommonLocations();
+      
+      res.json({
+        message: `Scanned common locations and found ${detected.length} new credentials`,
+        count: detected.length,
+        credentials: detected.map(cred => ({
+          service: cred.service,
+          type: cred.type,
+          identifier: cred.identifier
+        }))
+      });
+    } catch (error) {
+      console.error('Credential scan error:', error);
+      res.status(500).json({ error: 'Failed to scan for credentials' });
+    }
+  });
+
+  app.post('/api/credentials/oauth', authenticateUser, async (req: any, res) => {
+    try {
+      const { service, clientId, clientSecret, accessToken, refreshToken, expiresIn, tokenType, scope } = req.body;
+      
+      if (!service || !clientId || !clientSecret || !accessToken) {
+        return res.status(400).json({ error: 'Missing required OAuth fields' });
+      }
+      
+      await universalCredentialManager.storeOAuthTokens({
+        service,
+        clientId,
+        clientSecret,
+        accessToken,
+        refreshToken,
+        expiresIn,
+        tokenType,
+        scope
+      });
+      
+      res.json({
+        message: 'OAuth credentials stored successfully',
+        service
+      });
+    } catch (error) {
+      console.error('Failed to store OAuth credentials:', error);
+      res.status(500).json({ error: 'Failed to store OAuth credentials' });
+    }
+  });
+
+  app.get('/api/credentials/oauth/:service', authenticateUser, async (req: any, res) => {
+    try {
+      const { service } = req.params;
+      const { tokenUrl, grantType } = req.query;
+      
+      const refreshConfig = tokenUrl ? {
+        tokenUrl: tokenUrl as string,
+        grantType: grantType as string
+      } : undefined;
+      
+      const tokens = await universalCredentialManager.getOAuthTokens(service, refreshConfig);
+      
+      if (tokens) {
+        res.json(tokens);
+      } else {
+        res.status(404).json({ error: 'OAuth tokens not found for service' });
+      }
+    } catch (error) {
+      console.error('Failed to get OAuth tokens:', error);
+      res.status(500).json({ error: 'Failed to get OAuth tokens' });
+    }
+  });
+
+  app.post('/api/credentials/apply', authenticateUser, async (req: any, res) => {
+    try {
+      const { config, service } = req.body;
+      
+      if (!config || !service) {
+        return res.status(400).json({ error: 'Missing config or service' });
+      }
+      
+      const result = await universalCredentialManager.applyCredentials(
+        config,
+        service,
+        req.user.id
+      );
+      
+      res.json({
+        applied: result.applied,
+        credentials: result.credentials,
+        config: config
+      });
+    } catch (error) {
+      console.error('Failed to apply credentials:', error);
+      res.status(500).json({ error: 'Failed to apply credentials' });
+    }
+  });
+
   // AI Agent - Code Generation, Deployment & Integration with Venice AI
   app.post("/api/ai/chat", authenticateUser, async (req, res) => {
     try {
@@ -1164,6 +1291,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`[AI Agent] Processing command: ${message}`);
+      
+      // Automatically scan message for any credentials
+      const detectedCreds = await universalCredentialManager.scanForCredentials(message, 'user_message');
+      if (detectedCreds.length > 0) {
+        console.log(`[AI Agent] Auto-detected ${detectedCreds.length} credentials in message`);
+      }
       
       const msgLower = message.toLowerCase();
       let response = "";

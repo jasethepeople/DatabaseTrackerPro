@@ -44,6 +44,7 @@ export function Navigation() {
     { path: "/intelligent-suggestions", label: "AI Suggestions", icon: Lightbulb },
     { path: "/ai-coding-assistant", label: "AI Assistant", icon: Bot },
     { path: "/security-framework", label: "Security", icon: Shield },
+    { path: "/credentials", label: "Credentials", icon: Key },
     { path: "/code-refactoring", label: "Refactor", icon: Wrench },
     { path: "/multiplayer", label: "Multiplayer", icon: Users },
     { path: "/secrets", label: "Secrets", icon: Key },

@@ -139,6 +139,17 @@ The application follows a modern full-stack architecture with clear separation b
 
 ## Recent Changes: Latest modifications with dates
 
+### July 17, 2025 (Updated 7:15 PM)
+- **OAuth Support Added to Universal Credential Manager**: Complete OAuth 2.0 authentication with automatic token refresh
+  - **OAuth Token Storage**: Securely stores client ID, client secret, access tokens, and refresh tokens
+  - **Automatic Token Refresh**: Expired access tokens are automatically refreshed using stored refresh tokens
+  - **Universal OAuth Support**: Works with Google, GitHub, Microsoft, Spotify, and any OAuth 2.0 provider
+  - **Token Expiry Tracking**: Tracks token expiration times and refreshes before they expire
+  - **Credential Manager UI**: Beautiful interface to manage OAuth credentials and view token status
+  - **API Endpoints**: Complete REST API for OAuth credential management
+  - **Auto-Detection**: AI agent automatically detects and stores OAuth credentials from messages
+  - **Secure Encryption**: All OAuth tokens encrypted with AES-256-GCM
+
 ### July 17, 2025 (Updated 6:45 PM)
 - **AI Agent Now Executes CI/CD Pipeline Automation**: Complete automatic GitHub Actions setup without user interaction
   - **Automatic Execution**: When users request CI/CD pipeline setup, agent automatically creates GitHub repos, configures Actions, and deploys
