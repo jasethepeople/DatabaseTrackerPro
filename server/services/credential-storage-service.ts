@@ -64,14 +64,20 @@ export class CredentialStorageService {
     return decrypted;
   }
 
-  async saveGitHubCredentials(email: string, password: string): Promise<void> {
+  async saveGitHubCredentials(email: string, passwordOrToken: string): Promise<void> {
     try {
       // Create credentials directory if it doesn't exist
       await fs.mkdir(this.credentialsPath, { recursive: true });
       
-      // For GitHub, we'll simulate token generation based on credentials
-      // In a real scenario, this would use OAuth or Personal Access Token
-      const token = 'ghp_' + crypto.createHash('sha256').update(email + password).digest('hex').substring(0, 36);
+      let token = passwordOrToken;
+      
+      // Check if it's a Personal Access Token (starts with ghp_) or password
+      if (!passwordOrToken.startsWith('ghp_') && !passwordOrToken.startsWith('github_pat_')) {
+        // If it's a password, we need to inform the user to use a PAT instead
+        console.log('Note: GitHub requires Personal Access Tokens for API access');
+        // For now, store the password as-is, but it won't work with GitHub API
+        token = passwordOrToken;
+      }
       
       const credentials = await this.loadCredentials();
       

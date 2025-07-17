@@ -1180,32 +1180,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (emailMatch && passwordMatch && passwordMatch.length > 0) {
             const email = emailMatch[1];
-            const password = passwordMatch[0].trim();
+            const passwordOrToken = passwordMatch[0].trim();
             
-            const { credentialStorage } = await import('./services/credential-storage-service');
-            await credentialStorage.saveGitHubCredentials(email, password);
+            // Check if it's a Personal Access Token
+            const isToken = passwordOrToken.startsWith('ghp_') || passwordOrToken.startsWith('github_pat_');
             
-            response = `✅ GitHub credentials saved successfully!
+            if (!isToken) {
+              response = `⚠️ **GitHub Personal Access Token Required**
 
-Your credentials have been securely encrypted and stored for future use.
+GitHub no longer allows password authentication for API access. You need to create a Personal Access Token.
+
+**How to create a GitHub Personal Access Token:**
+
+1. Go to GitHub → Settings → Developer Settings → Personal Access Tokens
+2. Click "Generate new token (classic)"
+3. Give it a name (e.g., "CI/CD Pipeline")
+4. Select these permissions:
+   - ✅ repo (all)
+   - ✅ workflow
+   - ✅ admin:repo_hook
+5. Click "Generate token"
+6. Copy the token (starts with "ghp_")
+
+Then use this command:
+"Use GitHub credentials: ${email} ghp_YOUR_TOKEN_HERE"
+
+For now, I'll set up a demo pipeline to show you how it works:`;
+              
+              // Run demo setup
+              const { autoSetupCICD } = await import('./services/cicd-automation-service');
+              const projectName = 'demo-python-project';
+              const projectPath = './workspace/demo-python-project';
+              
+              const pipelineResult = await autoSetupCICD(projectPath, projectName);
+              
+              if (pipelineResult.success) {
+                response += `\n\n${pipelineResult.summary}`;
+              }
+            } else {
+              // It's a token, save it
+              const { credentialStorage } = await import('./services/credential-storage-service');
+              await credentialStorage.saveGitHubCredentials(email, passwordOrToken);
+              
+              response = `✅ GitHub Personal Access Token saved successfully!
+
+Your token has been securely encrypted and stored for future use.
 
 Now running CI/CD pipeline setup with your GitHub account...`;
-            
-            // Now run the CI/CD setup with the saved credentials
-            const { autoSetupCICD } = await import('./services/cicd-automation-service');
-            const projectName = 'my-python-project';
-            const projectPath = './workspace/my-python-project';
-            
-            const pipelineResult = await autoSetupCICD(projectPath, projectName);
-            
-            if (pipelineResult.success) {
-              response += `\n\n${pipelineResult.summary}`;
+              
+              // Now run the CI/CD setup with the saved credentials
+              const { autoSetupCICD } = await import('./services/cicd-automation-service');
+              const projectName = 'my-python-project';
+              const projectPath = './workspace/my-python-project';
+              
+              const pipelineResult = await autoSetupCICD(projectPath, projectName);
+              
+              if (pipelineResult.success) {
+                response += `\n\n${pipelineResult.summary}`;
+              }
             }
             
             actionTaken = true;
           } else {
             response = `I couldn't extract the credentials from your message. Please provide them in the format:
-"Use GitHub credentials: email@example.com password123"`;
+"Use GitHub credentials: email@example.com ghp_YOUR_TOKEN_HERE"`;
           }
         } catch (error) {
           console.error('Credential storage error:', error);
