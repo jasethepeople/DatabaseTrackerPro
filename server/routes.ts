@@ -2264,6 +2264,20 @@ What would you like me to build, deploy, or integrate?`;
     }
   });
 
+  // Download deployment package
+  app.get("/api/download/deployment-package", (req, res) => {
+    const packagePath = "/tmp/ai-agent-deployment.tar.gz";
+    
+    if (fs.existsSync(packagePath)) {
+      res.setHeader('Content-Type', 'application/gzip');
+      res.setHeader('Content-Disposition', 'attachment; filename="ai-agent-deployment.tar.gz"');
+      const fileStream = fs.createReadStream(packagePath);
+      fileStream.pipe(res);
+    } else {
+      res.status(404).json({ error: "Deployment package not found. Please regenerate." });
+    }
+  });
+
 
 
 // Helper functions for code analysis and refactoring
