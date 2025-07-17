@@ -422,7 +422,7 @@ export default function DeploymentDashboard() {
                       {api.description}
                     </p>
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {api.features.slice(0, 3).map((feature, index) => (
+                      {api.features && api.features.slice(0, 3).map((feature, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {feature}
                         </Badge>

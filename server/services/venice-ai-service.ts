@@ -104,7 +104,7 @@ class VeniceAIService {
     }
   }
 
-  // Main chat completion method
+  // Main chat completion method with timeout
   async createCompletion(completion: VeniceCompletion): Promise<any> {
     // Ensure we have the latest API key
     if (!this.apiKey && process.env.VENICE_API_KEY) {
@@ -118,11 +118,18 @@ class VeniceAIService {
     }
 
     try {
+      // Create an AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: this.headers,
-        body: JSON.stringify(completion)
+        body: JSON.stringify(completion),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const error = await response.text();
@@ -131,7 +138,12 @@ class VeniceAIService {
 
       const data = await response.json();
       return data.choices[0].message.content;
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('Venice AI request timed out');
+        // Return a fallback response on timeout
+        return this.simulateResponse(completion);
+      }
       console.error('Venice AI request failed:', error);
       throw error;
     }

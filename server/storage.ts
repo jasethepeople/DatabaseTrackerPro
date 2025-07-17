@@ -111,6 +111,11 @@ export interface IStorage {
   rateSnippet(userId: number, snippetId: number, rating: number): Promise<void>;
   incrementSnippetViews(id: number): Promise<void>;
 
+  // API Key management
+  getUserAPIKeys(userId: number): Promise<any[]>;
+  createAPIKey(key: any): Promise<any>;
+  revokeAPIKey(userId: number, keyId: string): Promise<boolean>;
+  
   // Collaboration operations
   getCollaborationSession(projectId: number): Promise<any | undefined>;
 }
@@ -551,6 +556,35 @@ export class DbStorage implements IStorage {
   async getCollaborationSession(projectId: number): Promise<any | undefined> {
     return collaborationSessions.get(projectId);
   }
+  
+  // API Key management methods
+  async getUserAPIKeys(userId: number): Promise<any[]> {
+    // Store keys in memory for now
+    const userKeys = this.apiKeys.get(userId) || [];
+    return userKeys;
+  }
+  
+  async createAPIKey(key: any): Promise<any> {
+    const userId = key.userId;
+    if (!this.apiKeys.has(userId)) {
+      this.apiKeys.set(userId, []);
+    }
+    this.apiKeys.get(userId)!.push(key);
+    return key;
+  }
+  
+  async revokeAPIKey(userId: number, keyId: string): Promise<boolean> {
+    const userKeys = this.apiKeys.get(userId) || [];
+    const index = userKeys.findIndex(key => key.id === keyId);
+    if (index > -1) {
+      userKeys.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+  
+  // In-memory storage for API keys
+  private apiKeys = new Map<number, any[]>();
 }
 
 export const storage = new DbStorage();

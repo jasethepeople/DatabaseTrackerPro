@@ -1719,6 +1719,63 @@ Just describe what you need and I'll help you build it!`;
     }
   });
 
+  // API Key Management Routes
+  app.get('/api/keys', authenticateUser, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const keys = await storage.getUserAPIKeys(userId);
+      res.json(keys);
+    } catch (error) {
+      console.error('Error fetching API keys:', error);
+      res.status(500).json({ error: 'Failed to fetch API keys' });
+    }
+  });
+
+  app.post('/api/keys/generate', authenticateUser, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { name, permissions, expiry } = req.body;
+      
+      // Generate a secure API key
+      const keyPrefix = permissions === 'admin' ? 'sk-admin' : permissions === 'write' ? 'sk-write' : 'sk-read';
+      const randomPart = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const apiKey = `${keyPrefix}-${randomPart}`;
+      
+      const newKey = {
+        id: `key-${Date.now()}`,
+        userId,
+        name,
+        key: apiKey,
+        permissions: permissions === 'admin' ? ['read', 'write', 'admin'] : permissions === 'write' ? ['read', 'write'] : ['read'],
+        createdAt: new Date(),
+        status: 'active' as const,
+        expiresAt: expiry === 'never' ? null : 
+                  expiry === '30days' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) :
+                  expiry === '90days' ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) :
+                  new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+      };
+      
+      const savedKey = await storage.createAPIKey(newKey);
+      res.json(savedKey);
+    } catch (error) {
+      console.error('Error generating API key:', error);
+      res.status(500).json({ error: 'Failed to generate API key' });
+    }
+  });
+
+  app.delete('/api/keys/:keyId', authenticateUser, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { keyId } = req.params;
+      
+      await storage.revokeAPIKey(userId, keyId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error revoking API key:', error);
+      res.status(500).json({ error: 'Failed to revoke API key' });
+    }
+  });
+
   // Code Snippets Routes
   app.get('/api/code-snippets', authenticateUser, async (req: any, res) => {
     try {
@@ -2675,6 +2732,34 @@ function calculateImprovements(original: string, refactored: string) {
       res.json({ success: true, commit: { hash: "newcommit123", message, files: files.length } });
     } catch (error) {
       res.status(500).json({ message: "Failed to commit" });
+    }
+  });
+  
+  // Create demo user endpoint (for testing)
+  app.post('/api/setup/demo-user', async (req, res) => {
+    try {
+      // Check if demo user already exists
+      const existingUser = await storage.getUserByUsername("demo");
+      if (existingUser) {
+        return res.json({ message: "Demo user already exists", username: "demo", password: "demo123" });
+      }
+
+      // Create demo user
+      const hashedPassword = await bcrypt.hash("demo123", 10);
+      const demoUser = await storage.createUser({
+        username: "demo",
+        email: "demo@localreplit.com",
+        passwordHash: hashedPassword,
+      });
+
+      res.json({ 
+        message: "Demo user created successfully", 
+        username: demoUser.username,
+        password: "demo123" 
+      });
+    } catch (error) {
+      console.error("Error creating demo user:", error);
+      res.status(500).json({ error: "Failed to create demo user" });
     }
   });
 

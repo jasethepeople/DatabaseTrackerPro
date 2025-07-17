@@ -34,7 +34,7 @@ export function Navigation() {
     { path: "/chat", label: "AI Chat", icon: Bot },
     { path: "/venice-ai", label: "Venice AI", icon: Bot },
     { path: "/code-snippets", label: "Code Snippets", icon: Code },
-    { path: "/anthropic-demo", label: "API Key Gen", icon: Key },
+    { path: "/api-keys", label: "API Key Gen", icon: Key },
     { path: "/data", label: "Data Dashboard", icon: Database },
     { path: "/ai-discovery", label: "AI Discovery", icon: Search },
     { path: "/deployment", label: "Deploy", icon: Cloud },

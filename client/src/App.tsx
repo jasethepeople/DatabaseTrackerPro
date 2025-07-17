@@ -18,6 +18,7 @@ import SimpleChat from "./pages/simple-chat";
 import CodeSnippets from "./pages/code-snippets";
 import DemoCodeSnippets from "./pages/demo-code-snippets";
 import AnthropicKeyDemo from "./pages/anthropic-key-demo";
+import APIKeyGenerator from "./pages/api-key-generator";
 import WorkingDashboard from "./pages/working-dashboard";
 import SecurityFramework from "./pages/security-framework";
 import CodeRefactoring from "./pages/code-refactoring";
@@ -103,6 +104,7 @@ function Router() {
           <Route path="/code-snippets" component={CodeSnippets} />
           <Route path="/demo-snippets" component={DemoCodeSnippets} />
           <Route path="/anthropic-demo" component={AnthropicKeyDemo} />
+          <Route path="/api-keys" component={APIKeyGenerator} />
           <Route path="/data" component={DataDashboard} />
           <Route path="/ai-discovery" component={AIDiscovery} />
           <Route path="/autonomous-learning" component={AutonomousLearning} />
