@@ -1,593 +1,588 @@
-import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Bot, Code, Lightbulb, Zap, FileText, Sparkles, Copy, Check } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
-import { 
-  Bot, 
-  Code, 
-  Lightbulb, 
-  Zap, 
-  CheckCircle, 
-  AlertTriangle, 
-  Info, 
-  XCircle,
-  Play,
-  Copy,
-  Wand2,
-  Brain,
-  FileCode,
-  Target,
-  TrendingUp,
-  Sparkles
-} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface CodeSuggestion {
   id: string;
-  type: 'optimization' | 'bug_fix' | 'best_practice' | 'security' | 'performance';
+  type: 'improvement' | 'bug_fix' | 'optimization' | 'security' | 'refactor';
   title: string;
   description: string;
-  code: string;
+  originalCode: string;
+  suggestedCode: string;
   confidence: number;
-  line?: number;
-  column?: number;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  autoApplicable: boolean;
+  reasoning: string;
+  impact: 'low' | 'medium' | 'high';
+  language: string;
 }
 
 interface CodeCompletion {
   id: string;
-  insertText: string;
-  displayText: string;
-  detail: string;
-  kind: 'function' | 'variable' | 'class' | 'method' | 'property' | 'keyword';
+  trigger: string;
+  completion: string;
+  description: string;
   confidence: number;
+  context: string;
+}
+
+interface RefactoringOpportunity {
+  id: string;
+  type: 'extract_function' | 'remove_duplication' | 'simplify_logic' | 'modernize';
+  title: string;
+  description: string;
+  beforeCode: string;
+  afterCode: string;
+  benefits: string[];
+  effort: 'low' | 'medium' | 'high';
 }
 
 interface ContextualHelp {
+  id: string;
+  topic: string;
   documentation: string;
   examples: string[];
-  relatedFiles: string[];
-  usagePatterns: string[];
-}
-
-interface RefactoringSuggestion {
-  id: string;
-  title: string;
-  description: string;
-  before: string;
-  after: string;
-  impact: 'low' | 'medium' | 'high';
-  confidence: number;
-  benefits: string[];
-}
-
-interface AIResponse {
-  suggestions: CodeSuggestion[];
-  completions: CodeCompletion[];
-  contextualHelp: ContextualHelp;
-  refactoringSuggestions: RefactoringSuggestion[];
+  bestPractices: string[];
+  commonPitfalls: string[];
 }
 
 export default function AICodingAssistant() {
   const [activeTab, setActiveTab] = useState('editor');
-  const [code, setCode] = useState(`// Welcome to the AI Coding Assistant!
-// Start typing your code and get intelligent suggestions
-
-function calculateSum(numbers) {
-  let total = 0;
-  for (var i = 0; i < numbers.length; i++) {
-    total = total + numbers[i];
-  }
-  return total;
-}
-
-// This function could be improved...
-async function fetchUserData(userId) {
-  const response = await fetch('/api/users/' + userId);
-  const data = response.json();
-  return data;
-}`);
+  const [code, setCode] = useState('');
   const [language, setLanguage] = useState('typescript');
-  const [cursorPosition, setCursorPosition] = useState(0);
-  const [selectedText, setSelectedText] = useState('');
-  const [appliedSuggestions, setAppliedSuggestions] = useState<string[]>([]);
-  
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [analysisMode, setAnalysisMode] = useState<'real-time' | 'on-demand'>('real-time');
+  const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch AI analysis
-  const { data: aiAnalysis, isLoading: analysisLoading, refetch: refetchAnalysis } = useQuery({
-    queryKey: ['/api/ai-assistant/analyze'],
-    enabled: false // We'll trigger this manually
+  // Get AI suggestions based on current code
+  const { data: suggestions = [], isLoading: suggestionsLoading } = useQuery({
+    queryKey: ['/api/ai/coding-suggestions', code, language],
+    enabled: code.length > 10 && analysisMode === 'real-time',
+    refetchInterval: analysisMode === 'real-time' ? 3000 : false,
   });
 
-  // Fetch assistant stats
-  const { data: assistantStats } = useQuery({
-    queryKey: ['/api/ai-assistant/stats']
+  // Get code completions
+  const { data: completions = [], isLoading: completionsLoading } = useQuery({
+    queryKey: ['/api/ai/code-completions', code, language],
+    enabled: code.length > 5,
+  });
+
+  // Get refactoring opportunities
+  const { data: refactoring = [], isLoading: refactoringLoading } = useQuery({
+    queryKey: ['/api/ai/refactoring-opportunities', code, language],
+    enabled: code.length > 20,
+  });
+
+  // Get contextual help
+  const { data: contextualHelp = [], isLoading: helpLoading } = useQuery({
+    queryKey: ['/api/ai/contextual-help', code, language],
+    enabled: code.length > 10,
   });
 
   // Apply suggestion mutation
   const applySuggestionMutation = useMutation({
     mutationFn: async (suggestion: CodeSuggestion) => {
-      return apiRequest('/api/ai-assistant/apply-suggestion', 'POST', {
-        suggestionId: suggestion.id,
-        code,
-        cursorPosition
-      });
+      const newCode = code.replace(suggestion.originalCode, suggestion.suggestedCode);
+      setCode(newCode);
+      return { success: true };
     },
-    onSuccess: (data) => {
-      if (data.success) {
-        setCode(data.updatedCode);
-        setAppliedSuggestions(prev => [...prev, data.suggestionId]);
-        toast({
-          title: "Suggestion Applied",
-          description: "Code has been updated successfully.",
-        });
-      }
-    },
-    onError: () => {
+    onSuccess: () => {
       toast({
-        title: "Error",
-        description: "Failed to apply suggestion.",
+        title: "Suggestion Applied",
+        description: "Code has been updated with the AI suggestion",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/ai/coding-suggestions'] });
+    },
+  });
+
+  // Manual analysis mutation
+  const manualAnalysisMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/ai/analyze-code', 'POST', { code, language });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/ai/coding-suggestions'] });
+    },
+  });
+
+  const copyToClipboard = async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedStates(prev => ({ ...prev, [id]: true }));
+      setTimeout(() => {
+        setCopiedStates(prev => ({ ...prev, [id]: false }));
+      }, 2000);
+      toast({
+        title: "Copied!",
+        description: "Code copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Copy failed",
+        description: "Could not copy to clipboard",
         variant: "destructive",
       });
     }
-  });
-
-  // Analyze code mutation
-  const analyzeCodeMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest('/api/ai-assistant/analyze', 'POST', {
-        currentFile: 'editor.ts',
-        currentCode: code,
-        cursorPosition,
-        selectedText,
-        projectFiles: ['app.ts', 'utils.ts', 'components.tsx'],
-        recentFiles: ['app.ts'],
-        language
-      });
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(['/api/ai-assistant/analyze'], data);
-      toast({
-        title: "Analysis Complete",
-        description: `Found ${data.suggestions?.length || 0} suggestions and ${data.completions?.length || 0} completions.`,
-      });
-    }
-  });
-
-  const handleCodeChange = (value: string) => {
-    setCode(value);
-    
-    // Auto-trigger analysis on code changes (debounced)
-    const timeoutId = setTimeout(() => {
-      if (value.trim()) {
-        analyzeCodeMutation.mutate();
-      }
-    }, 1000);
-
-    return () => clearTimeout(timeoutId);
   };
 
-  const handleCursorPositionChange = () => {
-    if (textareaRef.current) {
-      setCursorPosition(textareaRef.current.selectionStart);
-      setSelectedText(textareaRef.current.value.substring(
-        textareaRef.current.selectionStart,
-        textareaRef.current.selectionEnd
-      ));
+  const getSuggestionIcon = (type: string) => {
+    switch (type) {
+      case 'improvement': return <Sparkles className="h-4 w-4" />;
+      case 'bug_fix': return <Zap className="h-4 w-4" />;
+      case 'optimization': return <Bot className="h-4 w-4" />;
+      case 'security': return <FileText className="h-4 w-4" />;
+      case 'refactor': return <Code className="h-4 w-4" />;
+      default: return <Lightbulb className="h-4 w-4" />;
     }
   };
 
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'high':
-        return <AlertTriangle className="h-4 w-4 text-red-400" />;
-      case 'medium':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      case 'low':
-        return <Info className="h-4 w-4 text-blue-500" />;
-      default:
-        return <Info className="h-4 w-4 text-gray-500" />;
+  const getSuggestionColor = (type: string) => {
+    switch (type) {
+      case 'improvement': return 'bg-blue-100 text-blue-800';
+      case 'bug_fix': return 'bg-red-100 text-red-800';
+      case 'optimization': return 'bg-green-100 text-green-800';
+      case 'security': return 'bg-orange-100 text-orange-800';
+      case 'refactor': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'high': return 'bg-red-50 text-red-700 dark:bg-red-900/50 dark:text-red-300';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'low': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    }
-  };
-
-  const copyToClipboard = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied",
-      description: "Code copied to clipboard.",
-    });
-  };
-
-  const renderSuggestion = (suggestion: CodeSuggestion, index: number) => (
-    <Card key={suggestion.id} className="mb-4">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {getSeverityIcon(suggestion.severity)}
-            <CardTitle className="text-base">{suggestion.title}</CardTitle>
-            <Badge className={getSeverityColor(suggestion.severity)}>
-              {suggestion.severity}
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              {Math.round(suggestion.confidence * 100)}% confidence
-            </Badge>
-          </div>
-          <div className="flex gap-2">
-            {suggestion.autoApplicable && (
-              <Button
-                size="sm"
-                onClick={() => applySuggestionMutation.mutate(suggestion)}
-                disabled={applySuggestionMutation.isPending}
-                className="gap-2"
-              >
-                <Wand2 className="h-3 w-3" />
-                Auto Apply
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => copyToClipboard(suggestion.code)}
-              className="gap-2"
-            >
-              <Copy className="h-3 w-3" />
-              Copy
-            </Button>
-          </div>
-        </div>
-        <CardDescription>{suggestion.description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-          <pre className="text-sm overflow-x-auto"><code>{suggestion.code}</code></pre>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderCompletion = (completion: CodeCompletion, index: number) => (
-    <Card key={completion.id} className="mb-3">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-              <Code className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <div className="font-medium text-sm">{completion.displayText}</div>
-              <div className="text-xs text-muted-foreground">{completion.detail}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
-              {completion.kind}
-            </Badge>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => copyToClipboard(completion.insertText)}
-            >
-              <Copy className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderRefactoringSuggestion = (suggestion: RefactoringSuggestion, index: number) => (
-    <Card key={suggestion.id} className="mb-4">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-purple-500" />
-            <CardTitle className="text-base">{suggestion.title}</CardTitle>
-            <Badge variant={suggestion.impact === 'high' ? 'default' : 'secondary'}>
-              {suggestion.impact} impact
-            </Badge>
-          </div>
-          <Button size="sm" variant="outline" className="gap-2">
-            <Play className="h-3 w-3" />
-            Preview
-          </Button>
-        </div>
-        <CardDescription>{suggestion.description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <h4 className="text-sm font-medium mb-2">Before:</h4>
-          <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-            <pre className="text-sm"><code>{suggestion.before}</code></pre>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-sm font-medium mb-2">After:</h4>
-          <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
-            <pre className="text-sm"><code>{suggestion.after}</code></pre>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-sm font-medium mb-2">Benefits:</h4>
-          <ul className="text-sm list-disc list-inside space-y-1">
-            {suggestion.benefits.map((benefit, i) => (
-              <li key={i} className="text-muted-foreground">{benefit}</li>
-            ))}
-          </ul>
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Bot className="h-8 w-8 text-blue-500" />
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <Bot className="h-8 w-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               AI Coding Assistant
             </h1>
-            <p className="text-muted-foreground mt-2">
-              Intelligent code analysis, suggestions, and context-aware completions
-            </p>
           </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={() => analyzeCodeMutation.mutate()}
-              disabled={analyzeCodeMutation.isPending}
-              className="gap-2"
-            >
-              <Brain className="h-4 w-4" />
-              {analyzeCodeMutation.isPending ? 'Analyzing...' : 'Analyze Code'}
-            </Button>
-          </div>
+          <p className="text-gray-600 dark:text-gray-400">
+            Context-aware code analysis, intelligent suggestions, and real-time assistance
+          </p>
         </div>
 
-        {/* Assistant Stats */}
-        {assistantStats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Knowledge Base</CardTitle>
-                <Target className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{assistantStats.knowledgeBaseSize}</div>
-                <p className="text-xs text-muted-foreground">Pattern libraries loaded</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Learning History</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{assistantStats.learningHistorySize}</div>
-                <p className="text-xs text-muted-foreground">Interactions recorded</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Context Cache</CardTitle>
-                <FileCode className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{assistantStats.contextCacheSize}</div>
-                <p className="text-xs text-muted-foreground">Cached contexts</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Applied Today</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{appliedSuggestions.length}</div>
-                <p className="text-xs text-muted-foreground">Suggestions applied</p>
-              </CardContent>
-            </Card>
+        {/* Controls */}
+        <div className="flex gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Language:</label>
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="px-3 py-1 border rounded-md text-sm"
+            >
+              <option value="typescript">TypeScript</option>
+              <option value="javascript">JavaScript</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="react">React/JSX</option>
+            </select>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Analysis:</label>
+            <select
+              value={analysisMode}
+              onChange={(e) => setAnalysisMode(e.target.value as 'real-time' | 'on-demand')}
+              className="px-3 py-1 border rounded-md text-sm"
+            >
+              <option value="real-time">Real-time</option>
+              <option value="on-demand">On-demand</option>
+            </select>
+          </div>
+          {analysisMode === 'on-demand' && (
+            <Button
+              onClick={() => manualAnalysisMutation.mutate()}
+              disabled={manualAnalysisMutation.isPending}
+              size="sm"
+            >
+              {manualAnalysisMutation.isPending ? 'Analyzing...' : 'Analyze Code'}
+            </Button>
+          )}
+        </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {/* Main Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="editor">Code Editor</TabsTrigger>
-            <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
+            <TabsTrigger value="suggestions">
+              AI Suggestions
+              {suggestions.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {suggestions.length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="completions">Completions</TabsTrigger>
             <TabsTrigger value="refactoring">Refactoring</TabsTrigger>
             <TabsTrigger value="help">Contextual Help</TabsTrigger>
           </TabsList>
 
+          {/* Code Editor Tab */}
           <TabsContent value="editor" className="space-y-4">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Smart Code Editor</CardTitle>
-                  <Select value={language} onValueChange={setLanguage}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="typescript">TypeScript</SelectItem>
-                      <SelectItem value="javascript">JavaScript</SelectItem>
-                      <SelectItem value="react">React/JSX</SelectItem>
-                      <SelectItem value="node">Node.js</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <CardDescription>
-                  Write your code below and get real-time AI-powered suggestions and analysis
-                </CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="h-5 w-5" />
+                  Code Editor
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea
-                  ref={textareaRef}
                   value={code}
-                  onChange={(e) => handleCodeChange(e.target.value)}
-                  onSelect={handleCursorPositionChange}
-                  onKeyUp={handleCursorPositionChange}
-                  placeholder="Start typing your code here..."
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Start typing your code here... The AI will provide real-time suggestions and analysis."
                   className="min-h-[400px] font-mono text-sm"
                 />
-                <div className="flex items-center justify-between mt-3 text-sm text-muted-foreground">
+                <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
+                  <span>Lines: {code.split('\n').length} | Characters: {code.length}</span>
                   <span>Language: {language}</span>
-                  <span>Cursor: {cursorPosition}</span>
-                  <span>Selected: {selectedText.length} chars</span>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* AI Suggestions Tab */}
           <TabsContent value="suggestions" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-yellow-500" />
-                  AI Suggestions
-                  {analysisLoading && <Badge variant="secondary">Analyzing...</Badge>}
+                  <Sparkles className="h-5 w-5" />
+                  AI-Powered Suggestions
+                  <Badge variant="outline">{suggestions.length} suggestions</Badge>
                 </CardTitle>
-                <CardDescription>
-                  Intelligent suggestions to improve your code quality, performance, and security
-                </CardDescription>
               </CardHeader>
               <CardContent>
-                {aiAnalysis?.suggestions?.length > 0 ? (
-                  aiAnalysis.suggestions.map((suggestion: CodeSuggestion, index: number) =>
-                    renderSuggestion(suggestion, index)
-                  )
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Lightbulb className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No suggestions available. Analyze your code to get AI-powered recommendations.</p>
+                {suggestionsLoading ? (
+                  <div className="text-center py-8">
+                    <Bot className="h-12 w-12 mx-auto text-gray-400 animate-pulse mb-4" />
+                    <p className="text-gray-600">Analyzing your code...</p>
                   </div>
+                ) : suggestions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Lightbulb className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <p className="text-gray-600">No suggestions available. Add more code to get AI-powered insights.</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[500px]">
+                    <div className="space-y-4">
+                      {suggestions.map((suggestion) => (
+                        <Card key={suggestion.id} className="border-l-4 border-l-blue-500">
+                          <CardContent className="pt-4">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                {getSuggestionIcon(suggestion.type)}
+                                <div>
+                                  <h4 className="font-semibold">{suggestion.title}</h4>
+                                  <p className="text-sm text-gray-600">{suggestion.description}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge className={getSuggestionColor(suggestion.type)}>
+                                  {suggestion.type.replace('_', ' ')}
+                                </Badge>
+                                <Badge variant="outline">
+                                  {suggestion.confidence}% confidence
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                              <div>
+                                <h5 className="font-medium text-sm mb-2">Current Code:</h5>
+                                <div className="relative">
+                                  <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
+                                    {suggestion.originalCode}
+                                  </pre>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="absolute top-2 right-2"
+                                    onClick={() => copyToClipboard(suggestion.originalCode, `orig-${suggestion.id}`)}
+                                  >
+                                    {copiedStates[`orig-${suggestion.id}`] ? (
+                                      <Check className="h-3 w-3" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                              <div>
+                                <h5 className="font-medium text-sm mb-2">Suggested Code:</h5>
+                                <div className="relative">
+                                  <pre className="bg-green-50 p-3 rounded text-xs overflow-x-auto">
+                                    {suggestion.suggestedCode}
+                                  </pre>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="absolute top-2 right-2"
+                                    onClick={() => copyToClipboard(suggestion.suggestedCode, `sugg-${suggestion.id}`)}
+                                  >
+                                    {copiedStates[`sugg-${suggestion.id}`] ? (
+                                      <Check className="h-3 w-3" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 p-3 bg-blue-50 rounded">
+                              <h5 className="font-medium text-sm mb-1">AI Reasoning:</h5>
+                              <p className="text-sm text-gray-700">{suggestion.reasoning}</p>
+                            </div>
+
+                            <div className="flex justify-between items-center mt-4">
+                              <Badge 
+                                variant={suggestion.impact === 'high' ? 'destructive' : 
+                                        suggestion.impact === 'medium' ? 'default' : 'secondary'}
+                              >
+                                {suggestion.impact} impact
+                              </Badge>
+                              <Button
+                                onClick={() => applySuggestionMutation.mutate(suggestion)}
+                                disabled={applySuggestionMutation.isPending}
+                                size="sm"
+                              >
+                                Apply Suggestion
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Code Completions Tab */}
           <TabsContent value="completions" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-blue-500" />
-                  Smart Completions
+                  <Zap className="h-5 w-5" />
+                  Intelligent Code Completions
                 </CardTitle>
-                <CardDescription>
-                  Context-aware code completions and intelligent snippets
-                </CardDescription>
               </CardHeader>
               <CardContent>
-                {aiAnalysis?.completions?.length > 0 ? (
-                  aiAnalysis.completions.map((completion: CodeCompletion, index: number) =>
-                    renderCompletion(completion, index)
-                  )
+                {completionsLoading ? (
+                  <div className="text-center py-8">
+                    <Bot className="h-12 w-12 mx-auto text-gray-400 animate-pulse mb-4" />
+                    <p className="text-gray-600">Generating completions...</p>
+                  </div>
+                ) : completions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Code className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <p className="text-gray-600">Start typing to see intelligent code completions.</p>
+                  </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Code className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No completions available. Start typing to see intelligent suggestions.</p>
+                  <div className="space-y-3">
+                    {completions.map((completion) => (
+                      <Card key={completion.id} className="border-l-4 border-l-green-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+                                  {completion.trigger}
+                                </code>
+                                <Badge variant="outline">
+                                  {completion.confidence}% confidence
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-3">{completion.description}</p>
+                              <div className="relative">
+                                <pre className="bg-gray-50 p-3 rounded text-sm overflow-x-auto">
+                                  {completion.completion}
+                                </pre>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="absolute top-2 right-2"
+                                  onClick={() => copyToClipboard(completion.completion, completion.id)}
+                                >
+                                  {copiedStates[completion.id] ? (
+                                    <Check className="h-3 w-3" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Refactoring Tab */}
           <TabsContent value="refactoring" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-purple-500" />
+                  <Code className="h-5 w-5" />
                   Refactoring Opportunities
                 </CardTitle>
-                <CardDescription>
-                  AI-identified opportunities to improve code structure and maintainability
-                </CardDescription>
               </CardHeader>
               <CardContent>
-                {aiAnalysis?.refactoringSuggestions?.length > 0 ? (
-                  aiAnalysis.refactoringSuggestions.map((suggestion: RefactoringSuggestion, index: number) =>
-                    renderRefactoringSuggestion(suggestion, index)
-                  )
+                {refactoringLoading ? (
+                  <div className="text-center py-8">
+                    <Bot className="h-12 w-12 mx-auto text-gray-400 animate-pulse mb-4" />
+                    <p className="text-gray-600">Analyzing refactoring opportunities...</p>
+                  </div>
+                ) : refactoring.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Code className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <p className="text-gray-600">No refactoring opportunities found. Your code looks well-structured!</p>
+                  </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No refactoring opportunities found. Your code looks well-structured!</p>
+                  <div className="space-y-4">
+                    {refactoring.map((opportunity) => (
+                      <Card key={opportunity.id} className="border-l-4 border-l-purple-500">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-semibold">{opportunity.title}</h4>
+                              <p className="text-sm text-gray-600">{opportunity.description}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-purple-100 text-purple-800">
+                                {opportunity.type.replace('_', ' ')}
+                              </Badge>
+                              <Badge variant="outline">
+                                {opportunity.effort} effort
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <h5 className="font-medium text-sm mb-2">Before:</h5>
+                              <pre className="bg-red-50 p-3 rounded text-xs overflow-x-auto">
+                                {opportunity.beforeCode}
+                              </pre>
+                            </div>
+                            <div>
+                              <h5 className="font-medium text-sm mb-2">After:</h5>
+                              <pre className="bg-green-50 p-3 rounded text-xs overflow-x-auto">
+                                {opportunity.afterCode}
+                              </pre>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 p-3 bg-purple-50 rounded">
+                            <h5 className="font-medium text-sm mb-2">Benefits:</h5>
+                            <ul className="text-sm text-gray-700 space-y-1">
+                              {opportunity.benefits.map((benefit, index) => (
+                                <li key={index} className="flex items-center gap-2">
+                                  <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                                  {benefit}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Contextual Help Tab */}
           <TabsContent value="help" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Info className="h-5 w-5 text-green-500" />
-                  Contextual Help
+                  <FileText className="h-5 w-5" />
+                  Contextual Help & Documentation
                 </CardTitle>
-                <CardDescription>
-                  Documentation, examples, and usage patterns for your current code
-                </CardDescription>
               </CardHeader>
               <CardContent>
-                {aiAnalysis?.contextualHelp ? (
-                  <div className="space-y-6">
-                    {aiAnalysis.contextualHelp.documentation && (
-                      <div>
-                        <h3 className="text-lg font-medium mb-2">Documentation</h3>
-                        <p className="text-muted-foreground">{aiAnalysis.contextualHelp.documentation}</p>
-                      </div>
-                    )}
-                    
-                    {aiAnalysis.contextualHelp.examples.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-medium mb-2">Examples</h3>
-                        <div className="space-y-3">
-                          {aiAnalysis.contextualHelp.examples.map((example: string, index: number) => (
-                            <div key={index} className="bg-muted p-3 rounded-md">
-                              <pre className="text-sm"><code>{example}</code></pre>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {aiAnalysis.contextualHelp.relatedFiles.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-medium mb-2">Related Files</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {aiAnalysis.contextualHelp.relatedFiles.map((file: string, index: number) => (
-                            <Badge key={index} variant="outline">{file}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                {helpLoading ? (
+                  <div className="text-center py-8">
+                    <Bot className="h-12 w-12 mx-auto text-gray-400 animate-pulse mb-4" />
+                    <p className="text-gray-600">Generating contextual help...</p>
+                  </div>
+                ) : contextualHelp.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <p className="text-gray-600">Start coding to get contextual help and documentation.</p>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Info className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No contextual help available. Analyze your code to get relevant documentation and examples.</p>
+                  <div className="space-y-4">
+                    {contextualHelp.map((help) => (
+                      <Card key={help.id}>
+                        <CardHeader>
+                          <CardTitle className="text-lg">{help.topic}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <h5 className="font-medium mb-2">Documentation:</h5>
+                            <p className="text-sm text-gray-700">{help.documentation}</p>
+                          </div>
+
+                          {help.examples.length > 0 && (
+                            <div>
+                              <h5 className="font-medium mb-2">Examples:</h5>
+                              <div className="space-y-2">
+                                {help.examples.map((example, index) => (
+                                  <pre key={index} className="bg-gray-50 p-3 rounded text-xs overflow-x-auto">
+                                    {example}
+                                  </pre>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {help.bestPractices.length > 0 && (
+                            <div>
+                              <h5 className="font-medium mb-2">Best Practices:</h5>
+                              <ul className="text-sm text-gray-700 space-y-1">
+                                {help.bestPractices.map((practice, index) => (
+                                  <li key={index} className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                                    {practice}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {help.commonPitfalls.length > 0 && (
+                            <div>
+                              <h5 className="font-medium mb-2">Common Pitfalls:</h5>
+                              <ul className="text-sm text-gray-700 space-y-1">
+                                {help.commonPitfalls.map((pitfall, index) => (
+                                  <li key={index} className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                                    {pitfall}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 )}
               </CardContent>

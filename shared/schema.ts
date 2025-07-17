@@ -81,6 +81,8 @@ export const services = pgTable("services", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   email: true,
@@ -120,9 +122,15 @@ export const insertServiceSchema = createInsertSchema(services).pick({
   config: true,
 });
 
+
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Project = typeof projects.$inferSelect;
+export type CodeSnippet = typeof codeSnippets.$inferSelect;
+export type InsertCodeSnippet = z.infer<typeof insertCodeSnippetSchema>;
+export type SnippetRating = typeof snippetRatings.$inferSelect;
+export type InsertSnippetRating = z.infer<typeof insertSnippetRatingSchema>;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type File = typeof files.$inferSelect;
 export type InsertFile = z.infer<typeof insertFileSchema>;
