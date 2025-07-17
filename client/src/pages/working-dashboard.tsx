@@ -146,6 +146,62 @@ export default function WorkingDashboard() {
               </Link>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Multiplayer Collaboration</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Real-time collaborative coding
+              </p>
+              <Link href="/multiplayer">
+                <Button className="w-full">Start Collaboration</Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Secrets Manager</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Manage environment variables securely
+              </p>
+              <Link href="/secrets">
+                <Button className="w-full">Manage Secrets</Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Database Browser</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Browse and query your database
+              </p>
+              <Link href="/database">
+                <Button className="w-full">Browse Database</Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Version Control</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Git integration and version control
+              </p>
+              <Link href="/version-control">
+                <Button className="w-full">Open Git</Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Actions */}

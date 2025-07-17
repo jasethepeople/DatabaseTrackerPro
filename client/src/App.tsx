@@ -26,6 +26,10 @@ import DebugDashboard from "./pages/debug-dashboard";
 import AICodingAssistant from "./pages/ai-coding-assistant";
 import DeploymentDashboard from "./pages/deployment-dashboard";
 import VeniceAIChat from "./pages/venice-ai-chat";
+import Multiplayer from "./pages/multiplayer";
+import SecretsManager from "./pages/secrets-manager";
+import DatabaseBrowser from "./pages/database-browser";
+import VersionControl from "./pages/version-control";
 import { Navigation } from "./components/navigation";
 import NotFound from "./pages/not-found";
 
@@ -110,6 +114,10 @@ function Router() {
           <Route path="/debug-dashboard" component={DebugDashboard} />
           <Route path="/deployment" component={DeploymentDashboard} />
           <Route path="/venice-ai" component={VeniceAIChat} />
+          <Route path="/multiplayer" component={Multiplayer} />
+          <Route path="/secrets" component={SecretsManager} />
+          <Route path="/database" component={DatabaseBrowser} />
+          <Route path="/version-control" component={VersionControl} />
           <Route path="/ide" component={Dashboard} />
           <Route path="/" component={WorkingDashboard} />
           <Route component={NotFound} />

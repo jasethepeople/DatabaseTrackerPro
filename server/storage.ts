@@ -110,7 +110,13 @@ export interface IStorage {
   deleteCodeSnippet(id: number): Promise<boolean>;
   rateSnippet(userId: number, snippetId: number, rating: number): Promise<void>;
   incrementSnippetViews(id: number): Promise<void>;
+
+  // Collaboration operations
+  getCollaborationSession(projectId: number): Promise<any | undefined>;
 }
+
+// In-memory collaboration sessions
+const collaborationSessions = new Map<number, any>();
 
 export class DbStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
@@ -540,6 +546,10 @@ export class DbStorage implements IStorage {
     } catch (error) {
       console.error("Error incrementing snippet views:", error);
     }
+  }
+
+  async getCollaborationSession(projectId: number): Promise<any | undefined> {
+    return collaborationSessions.get(projectId);
   }
 }
 

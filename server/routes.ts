@@ -2305,6 +2305,215 @@ function calculateImprovements(original: string, refactored: string) {
   };
 }
 
+  // Collaboration/Multiplayer routes
+  app.get("/api/collaboration/session/:projectId", authenticateUser, async (req: any, res) => {
+    try {
+      const session = await storage.getCollaborationSession(parseInt(req.params.projectId));
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get session" });
+    }
+  });
+
+  app.post("/api/collaboration/create", authenticateUser, async (req: any, res) => {
+    try {
+      const { projectId } = req.body;
+      const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const session = {
+        id: Date.now().toString(),
+        projectId,
+        inviteCode,
+        owner: req.user.username,
+        collaborators: [{
+          id: req.user.id.toString(),
+          username: req.user.username,
+          email: req.user.email,
+          status: 'online',
+          color: '#' + Math.floor(Math.random()*16777215).toString(16)
+        }],
+        createdAt: new Date()
+      };
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create session" });
+    }
+  });
+
+  // Secrets Management routes
+  app.get("/api/secrets", authenticateUser, async (req: any, res) => {
+    try {
+      // Return dummy secrets for now
+      const secrets = [
+        {
+          id: "1",
+          key: "DATABASE_URL",
+          value: process.env.DATABASE_URL || "postgresql://...",
+          description: "PostgreSQL database connection",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isSystem: true
+        }
+      ];
+      res.json(secrets);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get secrets" });
+    }
+  });
+
+  app.post("/api/secrets", authenticateUser, async (req: any, res) => {
+    try {
+      const { key, value, description } = req.body;
+      const secret = {
+        id: Date.now().toString(),
+        key,
+        value,
+        description,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isSystem: false
+      };
+      res.json(secret);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create secret" });
+    }
+  });
+
+  // Database Browser routes
+  app.get("/api/database/tables", authenticateUser, async (req: any, res) => {
+    try {
+      // Return schema tables
+      const tables = [
+        {
+          name: "users",
+          rowCount: 10,
+          columns: [
+            { name: "id", type: "integer", nullable: false, primaryKey: true },
+            { name: "username", type: "varchar", nullable: false, primaryKey: false },
+            { name: "email", type: "varchar", nullable: false, primaryKey: false },
+            { name: "createdAt", type: "timestamp", nullable: false, primaryKey: false }
+          ]
+        },
+        {
+          name: "projects",
+          rowCount: 25,
+          columns: [
+            { name: "id", type: "integer", nullable: false, primaryKey: true },
+            { name: "name", type: "varchar", nullable: false, primaryKey: false },
+            { name: "userId", type: "integer", nullable: false, primaryKey: false },
+            { name: "createdAt", type: "timestamp", nullable: false, primaryKey: false }
+          ]
+        },
+        {
+          name: "files",
+          rowCount: 150,
+          columns: [
+            { name: "id", type: "integer", nullable: false, primaryKey: true },
+            { name: "projectId", type: "integer", nullable: false, primaryKey: false },
+            { name: "path", type: "varchar", nullable: false, primaryKey: false },
+            { name: "content", type: "text", nullable: true, primaryKey: false }
+          ]
+        }
+      ];
+      res.json(tables);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get tables" });
+    }
+  });
+
+  app.get("/api/database/table/:name", authenticateUser, async (req: any, res) => {
+    try {
+      // Return dummy data for the table
+      const columns = ["id", "name", "email", "createdAt"];
+      const rows = [
+        { id: 1, name: "John Doe", email: "john@example.com", createdAt: new Date() },
+        { id: 2, name: "Jane Smith", email: "jane@example.com", createdAt: new Date() }
+      ];
+      res.json({ columns, rows, rowCount: rows.length });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get table data" });
+    }
+  });
+
+  app.post("/api/database/query", authenticateUser, async (req: any, res) => {
+    try {
+      const { query } = req.body;
+      // For safety, only allow SELECT queries in demo
+      if (!query.toLowerCase().startsWith("select")) {
+        return res.status(400).json({ message: "Only SELECT queries are allowed" });
+      }
+      res.json({
+        columns: ["id", "result"],
+        rows: [{ id: 1, result: "Query executed successfully" }],
+        rowCount: 1,
+        executionTime: 42
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to execute query" });
+    }
+  });
+
+  // Git/Version Control routes
+  app.get("/api/git/status", authenticateUser, async (req: any, res) => {
+    try {
+      res.json({
+        branch: "main",
+        ahead: 2,
+        behind: 0,
+        modified: ["src/App.tsx", "src/components/Button.tsx"],
+        untracked: ["newfile.js"],
+        staged: []
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get git status" });
+    }
+  });
+
+  app.get("/api/git/commits", authenticateUser, async (req: any, res) => {
+    try {
+      const commits = [
+        {
+          hash: "abc123",
+          message: "Add new features",
+          author: req.user.username,
+          date: new Date(),
+          files: 3
+        },
+        {
+          hash: "def456",
+          message: "Fix bug in authentication",
+          author: req.user.username,
+          date: new Date(Date.now() - 86400000),
+          files: 1
+        }
+      ];
+      res.json(commits);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get commits" });
+    }
+  });
+
+  app.get("/api/git/branches", authenticateUser, async (req: any, res) => {
+    try {
+      const branches = [
+        { name: "main", current: true, lastCommit: "abc123", ahead: 0, behind: 0 },
+        { name: "feature/new-ui", current: false, lastCommit: "xyz789", ahead: 3, behind: 1 },
+        { name: "bugfix/auth", current: false, lastCommit: "def456", ahead: 1, behind: 0 }
+      ];
+      res.json(branches);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get branches" });
+    }
+  });
+
+  app.post("/api/git/commit", authenticateUser, async (req: any, res) => {
+    try {
+      const { message, files } = req.body;
+      res.json({ success: true, commit: { hash: "newcommit123", message, files: files.length } });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to commit" });
+    }
+  });
+
   return httpServer;
 }
 

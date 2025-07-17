@@ -14,7 +14,9 @@ import {
   Shield,
   Wrench,
   Lightbulb,
-  Cloud
+  Cloud,
+  Users,
+  GitBranch
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 
@@ -42,6 +44,10 @@ export function Navigation() {
     { path: "/ai-coding-assistant", label: "AI Assistant", icon: Bot },
     { path: "/security-framework", label: "Security", icon: Shield },
     { path: "/code-refactoring", label: "Refactor", icon: Wrench },
+    { path: "/multiplayer", label: "Multiplayer", icon: Users },
+    { path: "/secrets", label: "Secrets", icon: Key },
+    { path: "/database", label: "Database", icon: Database },
+    { path: "/version-control", label: "Git", icon: GitBranch },
   ];
 
   return (
