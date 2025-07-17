@@ -16,7 +16,8 @@ import {
   Lightbulb,
   Cloud,
   Users,
-  GitBranch
+  GitBranch,
+  Monitor
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 
@@ -48,6 +49,7 @@ export function Navigation() {
     { path: "/secrets", label: "Secrets", icon: Key },
     { path: "/database", label: "Database", icon: Database },
     { path: "/version-control", label: "Git", icon: GitBranch },
+    { path: "/local-dev-environment", label: "Local Dev", icon: Monitor },
   ];
 
   return (

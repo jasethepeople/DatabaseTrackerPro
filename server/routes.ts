@@ -2081,6 +2081,189 @@ What would you like me to build, deploy, or integrate?`;
     }
   });
 
+  // Local Dev Environment routes
+  app.get("/api/local-dev/status", authenticateUser, (req: any, res) => {
+    const totalMemory = os.totalmem();
+    const freeMemory = os.freemem();
+    const cpuUsage = os.loadavg()[0] * 10; // Simplified CPU usage
+
+    res.json({
+      status: 'running',
+      memory: {
+        used: totalMemory - freeMemory,
+        total: totalMemory
+      },
+      cpu: Math.min(100, Math.round(cpuUsage)),
+      disk: {
+        used: 50 * 1024 * 1024 * 1024, // 50GB mock
+        total: 100 * 1024 * 1024 * 1024 // 100GB mock
+      },
+      services: {
+        webServer: true,
+        database: true,
+        terminal: true,
+        packageManager: true
+      }
+    });
+  });
+
+  app.get("/api/local-dev/environments", authenticateUser, async (req: any, res) => {
+    try {
+      const environments = [
+        {
+          id: "env-1",
+          name: "Project Alpha",
+          framework: "Next.js",
+          nodeVersion: "18.x",
+          status: "running",
+          port: 3000,
+          createdAt: new Date()
+        },
+        {
+          id: "env-2",
+          name: "API Server",
+          framework: "Express",
+          nodeVersion: "16.x",
+          status: "stopped",
+          createdAt: new Date()
+        }
+      ];
+      res.json(environments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch environments" });
+    }
+  });
+
+  app.post("/api/local-dev/create", authenticateUser, async (req: any, res) => {
+    try {
+      const { name, framework, nodeVersion } = req.body;
+      const newEnv = {
+        id: `env-${Date.now()}`,
+        name,
+        framework,
+        nodeVersion,
+        status: "stopped",
+        createdAt: new Date()
+      };
+      res.json(newEnv);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create environment" });
+    }
+  });
+
+  app.post("/api/local-dev/:id/start", authenticateUser, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      res.json({ 
+        success: true, 
+        message: "Environment started",
+        port: 3000 + Math.floor(Math.random() * 1000)
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to start environment" });
+    }
+  });
+
+  app.post("/api/local-dev/:id/stop", authenticateUser, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      res.json({ 
+        success: true, 
+        message: "Environment stopped"
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to stop environment" });
+    }
+  });
+
+  app.delete("/api/local-dev/:id", authenticateUser, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      res.json({ 
+        success: true, 
+        message: "Environment deleted"
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete environment" });
+    }
+  });
+
+  app.get("/api/local-dev/tools", authenticateUser, async (req: any, res) => {
+    try {
+      const tools = [
+        {
+          id: "tool-1",
+          name: "Metasploit Framework",
+          category: "Security Testing",
+          status: "installed",
+          version: "6.3.0",
+          description: "Penetration testing framework"
+        },
+        {
+          id: "tool-2",
+          name: "OSINT Framework",
+          category: "Intelligence",
+          status: "available",
+          version: "2.0",
+          description: "Open source intelligence gathering"
+        },
+        {
+          id: "tool-3",
+          name: "Social Engineering Toolkit",
+          category: "Security Testing",
+          status: "available",
+          version: "8.0.3",
+          description: "Social engineering attack framework"
+        },
+        {
+          id: "tool-4",
+          name: "FBI Data Recovery Suite",
+          category: "Forensics",
+          status: "available",
+          version: "3.2",
+          description: "Advanced forensic data recovery"
+        },
+        {
+          id: "tool-5",
+          name: "Vulnerability Database",
+          category: "Security",
+          status: "installed",
+          version: "Live",
+          description: "Real-time vulnerability feeds"
+        }
+      ];
+      res.json(tools);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tools" });
+    }
+  });
+
+  app.post("/api/local-dev/tools/:id/install", authenticateUser, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      // Simulate installation process
+      setTimeout(() => {
+        res.json({ 
+          success: true, 
+          message: "Tool installed successfully"
+        });
+      }, 1000);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to install tool" });
+    }
+  });
+
+  app.post("/api/local-dev/terminal", authenticateUser, async (req: any, res) => {
+    try {
+      const { command } = req.body;
+      // Simulate command execution
+      const output = `$ ${command}\nCommand executed successfully`;
+      res.json({ output });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to execute command" });
+    }
+  });
+
 
 
 // Helper functions for code analysis and refactoring
