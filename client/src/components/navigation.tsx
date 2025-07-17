@@ -13,7 +13,8 @@ import {
   Key,
   Shield,
   Wrench,
-  Lightbulb
+  Lightbulb,
+  Cloud
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 
@@ -32,6 +33,7 @@ export function Navigation() {
     { path: "/anthropic-demo", label: "API Key Gen", icon: Key },
     { path: "/data", label: "Data Dashboard", icon: Database },
     { path: "/ai-discovery", label: "AI Discovery", icon: Search },
+    { path: "/deployment", label: "Deploy", icon: Cloud },
     { path: "/autonomous-learning", label: "Learning", icon: Brain },
     { path: "/testing", label: "Testing", icon: TestTube },
     { path: "/snapshots", label: "Snapshots", icon: Camera },

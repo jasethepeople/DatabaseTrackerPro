@@ -24,6 +24,7 @@ import CodeRefactoring from "./pages/code-refactoring";
 import FileExplorer from "./pages/file-explorer";
 import DebugDashboard from "./pages/debug-dashboard";
 import AICodingAssistant from "./pages/ai-coding-assistant";
+import DeploymentDashboard from "./pages/deployment-dashboard";
 import { Navigation } from "./components/navigation";
 import NotFound from "./pages/not-found";
 
@@ -106,6 +107,7 @@ function Router() {
           <Route path="/code-refactoring" component={CodeRefactoring} />
           <Route path="/file-explorer" component={FileExplorer} />
           <Route path="/debug-dashboard" component={DebugDashboard} />
+          <Route path="/deployment" component={DeploymentDashboard} />
           <Route path="/ide" component={Dashboard} />
           <Route path="/" component={WorkingDashboard} />
           <Route component={NotFound} />
