@@ -400,37 +400,55 @@ export default function CodeSnippets() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: snippets = [], isLoading } = useQuery({
+  const { data: snippets = [], isLoading, error } = useQuery({
     queryKey: ['/api/code-snippets'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/code-snippets');
-      return response.json();
+      try {
+        const response = await apiRequest('GET', '/api/code-snippets');
+        const data = await response.json();
+        console.log('Code snippets loaded:', data);
+        return data;
+      } catch (err) {
+        console.error('Error loading code snippets:', err);
+        throw err;
+      }
     },
+    retry: 3,
+    refetchOnWindowFocus: false,
   });
 
   const generateSnippetMutation = useMutation({
     mutationFn: async (data: { prompt: string; language: string; category: string; difficulty: string }) => {
-      // Use built-in templates for offline operation
-      const templates = Object.keys(builtInTemplates);
-      const matchedTemplate = templates.find(key => 
-        data.prompt.toLowerCase().includes(key.split('-')[0]) ||
-        data.category.toLowerCase() === builtInTemplates[key as keyof typeof builtInTemplates].category.toLowerCase()
-      ) || 'react-component';
+      try {
+        // Use built-in templates for offline operation
+        const templates = Object.keys(builtInTemplates);
+        const matchedTemplate = templates.find(key => 
+          data.prompt.toLowerCase().includes(key.split('-')[0]) ||
+          data.category.toLowerCase() === builtInTemplates[key as keyof typeof builtInTemplates].category.toLowerCase()
+        ) || 'react-component';
 
-      const template = builtInTemplates[matchedTemplate as keyof typeof builtInTemplates];
-      
-      const snippetData = {
-        title: `${template.title} - ${data.prompt}`,
-        description: `${template.description} - Generated for: ${data.prompt}`,
-        code: template.code,
-        language: data.language,
-        category: data.category,
-        difficulty: data.difficulty,
-        tags: template.tags,
-        isPublic: true
-      };
+        const template = builtInTemplates[matchedTemplate as keyof typeof builtInTemplates];
+        
+        const snippetData = {
+          title: `${template.title} - ${data.prompt}`,
+          description: `${template.description} - Generated for: ${data.prompt}`,
+          code: template.code,
+          language: data.language,
+          category: data.category,
+          difficulty: data.difficulty,
+          tags: template.tags,
+          isPublic: true
+        };
 
-      return apiRequest('POST', '/api/code-snippets', snippetData);
+        console.log('Creating snippet:', snippetData);
+        const response = await apiRequest('POST', '/api/code-snippets', snippetData);
+        const result = await response.json();
+        console.log('Snippet created:', result);
+        return result;
+      } catch (err) {
+        console.error('Error creating snippet:', err);
+        throw err;
+      }
     },
     onSuccess: () => {
       toast({ title: 'Success', description: 'Code snippet generated successfully!' });
@@ -439,6 +457,7 @@ export default function CodeSnippets() {
       setActiveTab('browse');
     },
     onError: (error: any) => {
+      console.error('Mutation error:', error);
       toast({ title: 'Error', description: error.message || 'Failed to generate snippet' });
     },
   });
@@ -559,6 +578,17 @@ export default function CodeSnippets() {
               </Select>
             </div>
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                <span className="text-red-700 dark:text-red-300 font-medium">Error loading snippets</span>
+              </div>
+              <p className="text-red-600 dark:text-red-400 mt-2">{error.message}</p>
+            </div>
+          )}
 
           {/* Snippets Grid */}
           {isLoading ? (
