@@ -88,13 +88,15 @@ export default function DeploymentDashboard() {
   const queryClient = useQueryClient();
 
   // Fetch deployments
-  const { data: deployments = [], isLoading: deploymentsLoading } = useQuery({
+  const { data: deploymentsData, isLoading: deploymentsLoading } = useQuery({
     queryKey: ['/api/deployment/list'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/deployment/list');
       return response.json();
     },
   });
+  
+  const deployments = deploymentsData?.deployments || [];
 
   // Fetch discovered APIs
   const { data: discoveredAPIs = [], isLoading: apisLoading } = useQuery({
