@@ -1,0 +1,68 @@
+Below is a list of high-end prompts designed to test the capabilities of a custom, improved Replit-like AI with advanced features such as pulling saved credentials, automatic account login, account creation, API management, self-learning, and content AI-powered improvements. These prompts are structured to evaluate the AI's functionality, security, adaptability, and intelligence across various scenarios.
+1. Credential Management and Automatic Login
+Prompt:
+"Using securely stored credentials from my profile, log in to my GitHub account and retrieve the list of my public repositories. If the credentials are outdated or missing, prompt me to update or input them securely, then save them for future use. Ensure all interactions with credentials are encrypted and follow best security practices."
+Purpose: Tests secure credential storage, retrieval, automatic login, and error handling for outdated credentials.
+2. Account Creation and API Integration
+Prompt:
+"Create a new account on a specified platform (e.g., GitLab) using a randomly generated email and a strong password. Save the credentials securely in my profile. Then, generate an API token for the new account, store it securely, and use it to create a new private repository named 'TestRepo' via the platform’s API. Provide a confirmation of the repository creation and the saved API token details (without exposing the token)."
+Purpose: Evaluates account creation, secure credential storage, API token generation, and programmatic interaction with third-party APIs.
+3. API Search and Integration
+Prompt:
+"Search for a public API that provides real-time weather data. Select the most reliable option based on documentation quality and uptime. Create a Python script that integrates this API into a simple weather app, automatically handling authentication if required. Save the API details and the script in my project workspace for future use."
+Purpose: Tests the AI’s ability to search for APIs, evaluate their quality, integrate them into code, and save relevant data.
+4. Self-Learning and Code Improvement
+Prompt:
+"Analyze my recent Python project on Replit that implements a to-do list app. Identify inefficiencies or bugs in the code, suggest improvements based on best practices, and implement them after my approval. Use self-learning to adapt your suggestions to my coding style (e.g., prefer concise functions or specific naming conventions) based on my past projects. Provide a detailed explanation of the changes and their benefits."
+Purpose: Tests self-learning capabilities, code analysis, and tailored improvement suggestions.
+5. Content AI-Powered Documentation
+Prompt:
+"Generate comprehensive documentation for a Node.js project I’ve built in the workspace, which includes a REST API for a blog platform. Use content AI to create clear, user-friendly documentation with examples, automatically inferring the project’s structure and endpoints. Save the documentation as a Markdown file in my workspace and suggest improvements to make the API more user-friendly."
+Purpose: Tests the AI’s ability to generate high-quality documentation, infer project details, and provide UX-focused suggestions.
+6. Automated Testing and Debugging
+Prompt:
+"Run automated tests on my JavaScript project in the workspace, which is a simple e-commerce frontend. If no tests exist, generate unit tests using a framework like Jest based on the project’s functionality. Identify any bugs or performance issues, fix them, and provide a report summarizing the test results and fixes applied. Save the test suite for future use."
+Purpose: Evaluates test generation, debugging, and reporting capabilities.
+7. API Creation and Deployment
+Prompt:
+"Create a new REST API in Python using Flask that allows users to upload and retrieve text notes. Deploy the API to a cloud platform (e.g., Heroku) using my saved credentials for the platform. Generate and save an API key for accessing the deployed API, and provide a cURL command to test the /notes endpoint. Ensure the deployment is secure and follows best practices."
+Purpose: Tests API creation, deployment automation, credential usage, and secure key management.
+8. Cross-Platform Integration and Workflow Automation
+Prompt:
+"Set up a CI/CD pipeline for my Python project in the workspace using GitHub Actions. Automatically log in to my GitHub account using stored credentials, create a new repository, push the project to it, and configure the pipeline to run tests and deploy to a specified cloud platform (e.g., AWS) on every push. Save the pipeline configuration and provide a summary of the setup."
+Purpose: Tests integration with external platforms, automation of complex workflows, and secure credential handling.
+9. Self-Learning for User Preferences
+Prompt:
+"Review my past five projects in the workspace and identify my preferred programming languages, frameworks, and coding patterns (e.g., functional vs. object-oriented programming). Create a template for a new project based on these preferences, including a README with setup instructions tailored to my typical environment. Save the template and explain how it aligns with my coding habits."
+Purpose: Tests the AI’s ability to learn user preferences and create personalized templates.
+10. Real-Time Collaboration and Content Enhancement
+Prompt:
+"Collaborate with me in real-time to build a React-based chat application. Suggest UI improvements using content AI to generate a modern, user-friendly design. Automatically integrate a third-party API (e.g., Pusher) for real-time messaging, using saved credentials or creating a new account if needed. Save the project and provide a live preview link for testing."
+Purpose: Tests real-time collaboration, UI enhancement, API integration, and project saving.
+11. Security and Compliance Check
+Prompt:
+"Perform a security audit on my Node.js web application in the workspace. Check for vulnerabilities such as SQL injection, XSS, or insecure dependencies. Provide a detailed report with remediation steps and automatically apply fixes where possible after my approval. Ensure compliance with OWASP top 10 guidelines and save the audit report."
+Purpose: Tests security analysis, automated remediation, and compliance reporting.
+12. Advanced API Management
+Prompt:
+"Search for and compare three APIs that provide image processing capabilities. Rank them based on features, cost, and ease of use. Select the best one, integrate it into a Python script that resizes uploaded images, and save the API details and script in my workspace. Set up a cron job to periodically check the API’s status and notify me if it’s down."
+Purpose: Tests API comparison, integration, workspace management, and proactive monitoring.
+13. Content AI for Educational Content
+Prompt:
+"Create an interactive tutorial for learning Python async programming, tailored to my intermediate skill level based on my previous projects. Use content AI to generate engaging examples and quizzes. Save the tutorial as an executable Jupyter notebook in my workspace and suggest additional resources for further learning."
+Purpose: Tests content generation, personalization, and integration with educational tools.
+14. Error Handling and Recovery
+Prompt:
+"Simulate a scenario where my Django project in the workspace fails to connect to a PostgreSQL database due to incorrect credentials. Diagnose the issue, suggest fixes, and automatically update the configuration using saved credentials or prompt me for new ones. Test the connection and save the updated configuration."
+Purpose: Tests error diagnosis, recovery, and credential management.
+15. Cross-Project Dependency Management
+Prompt:
+"Analyze all my projects in the workspace and identify shared dependencies across them. Suggest a way to consolidate these dependencies into a single, reusable module or package. Create the module, update my projects to use it, and save the changes. Provide a report on the benefits of this consolidation."
+Purpose: Tests dependency analysis, modularization, and project updates.
+Notes for Testing:
+Security: Ensure all prompts involving credentials or APIs emphasize encryption, secure storage, and compliance with best practices (e.g., OWASP, GDPR).
+Self-Learning: Prompts should leverage the AI’s ability to adapt to user behavior, coding style, or preferences based on past interactions.
+Content AI: Use content AI to enhance outputs (e.g., documentation, tutorials, UI suggestions) with clear, engaging, and contextually relevant content.
+Error Handling: Include scenarios where the AI must handle failures gracefully, such as missing credentials or API downtime.
+Automation: Test the AI’s ability to automate complex tasks like CI/CD setup, deployment, or account creation without manual intervention.
+These prompts are designed to push the limits of the AI’s capabilities while ensuring practical, real-world applicability. Let me know if you’d like to refine these prompts further or focus on specific features!
