@@ -19,10 +19,26 @@
       "Port conflict detected"
     ],
     "solutions": [],
+    "confidence": 0.35000000000000003,
+    "learningMetrics": {
+      "successRate": 0,
+      "avgExecutionTime": 91,
+      "commonFailures": [
+        "Unknown failure",
+        "Unknown failure",
+        "Unknown failure"
+      ]
+    }
+  },
+  "614930902b688939415e9ea74c578e30": {
+    "patterns": [
+      "High CPU usage detected"
+    ],
+    "solutions": [],
     "confidence": 0.4,
     "learningMetrics": {
       "successRate": 0,
-      "avgExecutionTime": 89,
+      "avgExecutionTime": 93,
       "commonFailures": [
         "Unknown failure",
         "Unknown failure"
