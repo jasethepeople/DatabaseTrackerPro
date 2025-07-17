@@ -8,6 +8,7 @@ import ToolMarketplace from "@/components/tools/tool-marketplace";
 import ServiceDashboard from "@/components/services/service-dashboard";
 import HardwareMonitor from "@/components/monitoring/hardware-monitor";
 import AISuggestions from "@/components/editor/ai-suggestions";
+import { DevelopmentToolsPanel } from "@/components/development-tools-panel";
 
 export default function Dashboard() {
   const [activeRightTab, setActiveRightTab] = useState<"tools" | "services" | "monitor">("tools");
@@ -25,18 +26,23 @@ export default function Dashboard() {
         </div>
         
         {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Code Editor */}
-          <div className={`flex-1 ${isTerminalVisible ? 'h-3/5' : 'h-full'}`}>
-            <CodeEditor file={currentFile} />
+        <div className="flex-1 flex">
+          <div className="flex-1 flex flex-col">
+            {/* Code Editor */}
+            <div className={`flex-1 ${isTerminalVisible ? 'h-3/5' : 'h-full'}`}>
+              <CodeEditor file={currentFile} />
+            </div>
+            
+            {/* Terminal */}
+            {isTerminalVisible && (
+              <div className="h-2/5 border-t border-opacity-20 border-white">
+                <Terminal onToggle={() => setIsTerminalVisible(false)} />
+              </div>
+            )}
           </div>
           
-          {/* Terminal */}
-          {isTerminalVisible && (
-            <div className="h-2/5 border-t border-opacity-20 border-white">
-              <Terminal onToggle={() => setIsTerminalVisible(false)} />
-            </div>
-          )}
+          {/* Development Tools Panel */}
+          <DevelopmentToolsPanel className="w-64" />
         </div>
         
         {/* Right Sidebar - Tools & Services */}

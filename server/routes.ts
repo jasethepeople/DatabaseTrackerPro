@@ -226,6 +226,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Project run endpoint
+  app.post("/api/projects/:id/run", authenticateUser, async (req: any, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      if (project.userId !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Start the VM associated with the project
+      if (project.vmId) {
+        await vmManager.startVM(project.vmId);
+      }
+      
+      res.json({ 
+        message: "Project started successfully",
+        projectId: project.id,
+        vmId: project.vmId,
+        status: "running"
+      });
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to run project" });
+    }
+  });
+
   app.post("/api/vm/stop", authenticateUser, async (req: any, res) => {
     try {
       const vm = await storage.getVMByUserId(req.user.id);
