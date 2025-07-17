@@ -1170,8 +1170,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let actionTaken = false;
       let generatedCode = null;
 
-      // Try Venice AI first for code generation
-      if (msgLower.includes("generate") || msgLower.includes("create") || msgLower.includes("build") || msgLower.includes("code")) {
+      // Handle CI/CD pipeline requests automatically
+      if (msgLower.includes("ci/cd") || msgLower.includes("pipeline") || msgLower.includes("github actions")) {
+        if (msgLower.includes("set up") || msgLower.includes("create") || msgLower.includes("configure")) {
+          try {
+            const { autoSetupCICD } = await import('./services/cicd-automation-service');
+            
+            // Extract project details from message
+            let projectName = 'my-python-project';
+            let projectPath = './workspace/my-python-project';
+            
+            // Extract project name if mentioned
+            const projectMatch = message.match(/project\s+(?:named?|called?)\s+(\S+)/i) || 
+                               message.match(/for\s+my\s+(\S+)\s+project/i);
+            if (projectMatch) {
+              projectName = projectMatch[1].replace(/[^a-zA-Z0-9-]/g, '');
+            }
+            
+            // Execute automatic CI/CD setup
+            console.log(`[AI Agent] Executing automatic CI/CD setup for ${projectName}`);
+            const pipelineResult = await autoSetupCICD(projectPath, projectName);
+            
+            if (pipelineResult.success) {
+              response = `✅ **CI/CD Pipeline Successfully Created!**
+
+I've automatically set up your complete CI/CD pipeline with the following:
+
+${pipelineResult.summary}
+
+The pipeline is now live and will:
+- Run tests on every push
+- Deploy to AWS Lambda when pushing to main branch
+- Monitor code quality with coverage reports
+
+You can view your pipeline at: ${pipelineResult.pipelineUrl}
+
+Everything was done automatically - no manual steps required!`;
+              actionTaken = true;
+              generatedCode = pipelineResult.summary;
+            } else {
+              response = `I encountered some issues setting up the CI/CD pipeline:
+
+${pipelineResult.errors?.join('\n') || 'Unknown error occurred'}
+
+Would you like me to try a different approach or help you set up the missing credentials?`;
+            }
+          } catch (error) {
+            console.error('CI/CD automation error:', error);
+            response = `I attempted to set up your CI/CD pipeline automatically but encountered an error: ${error.message}
+
+Let me help you set it up step by step instead.`;
+          }
+        }
+      }
+      // Try Venice AI for other code generation
+      else if (msgLower.includes("generate") || msgLower.includes("create") || msgLower.includes("build") || msgLower.includes("code")) {
         try {
           const { veniceAIService } = await import('./services/venice-ai-service');
           await veniceAIService.initialize();
