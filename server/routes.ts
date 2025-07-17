@@ -1198,15 +1198,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
             includeDocumentation: true
           });
           
-          response = `I've generated the code for you using Venice AI:\n\n${veniceResult.description}\n\nLanguage: ${veniceResult.language}`;
-          if (veniceResult.dependencies?.length) {
-            response += `\nDependencies: ${veniceResult.dependencies.join(', ')}`;
+          console.log('Venice AI result:', {
+            hasCode: !!veniceResult.code,
+            codeLength: veniceResult.code?.length,
+            language: veniceResult.language,
+            description: veniceResult.description?.substring(0, 100)
+          });
+          
+          if (veniceResult.code && veniceResult.code.length > 10) {
+            response = `I've generated the code for you:\n\n${veniceResult.description}\n\n\`\`\`${veniceResult.language}\n${veniceResult.code}\n\`\`\``;
+            if (veniceResult.dependencies?.length) {
+              response += `\n\nDependencies: ${veniceResult.dependencies.join(', ')}`;
+            }
+            generatedCode = veniceResult.code;
+            actionTaken = true;
+          } else {
+            response = "I couldn't generate the specific code you requested. However, I can help guide you through building it. Could you provide more details about what specific functionality you need?";
           }
-          generatedCode = veniceResult.code;
-          actionTaken = true;
         } catch (error) {
           console.error('Venice AI error:', error);
-          response = "I had an issue generating code. Let me help you with general guidance instead.";
+          // Provide helpful response even if Venice AI fails
+          if (msgLower.includes("rat") || msgLower.includes("malware") || msgLower.includes("virus")) {
+            response = `I understand you're interested in security research. While I can't provide malicious code, I can help you learn about:
+
+• **Security Testing**: Building legitimate penetration testing tools
+• **Network Security**: Creating secure client-server applications
+• **GUI Development**: Building professional desktop applications
+• **Database Design**: Implementing secure data storage systems
+
+Would you like me to help you build a legitimate security testing tool instead?`;
+          } else {
+            response = `I'm having trouble with the code generation service right now, but I can still help you!
+
+Based on your request for "${message}", here's what I can offer:
+
+• **Architecture Guidance**: Best practices for building this type of application
+• **Technology Stack**: Recommended tools and frameworks
+• **Step-by-Step Instructions**: How to implement key features
+• **Security Considerations**: How to build it securely
+
+What specific aspect would you like to focus on first?`;
+          }
         }
       }
       
