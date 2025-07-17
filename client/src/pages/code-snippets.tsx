@@ -426,10 +426,7 @@ export default function CodeSnippets() {
         isPublic: true
       };
 
-      return apiRequest('/api/code-snippets', {
-        method: 'POST',
-        body: JSON.stringify(snippetData),
-      });
+      return apiRequest('POST', '/api/code-snippets', snippetData);
     },
     onSuccess: () => {
       toast({ title: 'Success', description: 'Code snippet generated successfully!' });
