@@ -18,6 +18,8 @@ import { environmentSnapshotService } from "./services/environment-snapshot-serv
 import { securityFrameworkService } from "./services/security-framework-service";
 import { debugSandbox } from './services/debug-sandbox';
 import { selfRepairService } from './services/self-repair-service';
+import * as fs from 'fs';
+import * as os from 'os';
 
 // Middleware to verify auth token
 async function authenticateUser(req: any, res: any, next: any) {

@@ -31,6 +31,7 @@ import SecretsManager from "./pages/secrets-manager";
 import DatabaseBrowser from "./pages/database-browser";
 import VersionControl from "./pages/version-control";
 import LocalDevEnvironment from "./pages/local-dev-environment";
+import DownloadDeployment from "./pages/download-deployment";
 import { Navigation } from "./components/navigation";
 import NotFound from "./pages/not-found";
 
@@ -120,6 +121,7 @@ function Router() {
           <Route path="/database" component={DatabaseBrowser} />
           <Route path="/version-control" component={VersionControl} />
           <Route path="/local-dev-environment" component={LocalDevEnvironment} />
+          <Route path="/download" component={DownloadDeployment} />
           <Route path="/ide" component={Dashboard} />
           <Route path="/" component={WorkingDashboard} />
           <Route component={NotFound} />
