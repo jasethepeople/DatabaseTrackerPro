@@ -12,8 +12,6 @@ const VeniceCompletionSchema = z.object({
   stream: z.boolean().optional().default(false),
   venice_parameters: z.object({
     include_venice_system_prompt: z.boolean().optional().default(true),
-    enable_web_search: z.string().optional().default('auto'),
-    enable_web_citations: z.boolean().optional().default(true),
     strip_thinking_response: z.boolean().optional().default(false),
     disable_thinking: z.boolean().optional().default(false)
   }).optional()
@@ -27,18 +25,23 @@ class VeniceAIService {
   private headers: Record<string, string>;
 
   constructor() {
-    this.apiKey = process.env.VENICE_API_KEY;
+    // Defer API key loading to ensure environment is ready
+    this.apiKey = undefined;
     this.headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.apiKey}`
+      'Content-Type': 'application/json'
     };
   }
 
   async initialize() {
-    if (!this.apiKey) {
+    // Load API key when initializing
+    this.apiKey = process.env.VENICE_API_KEY;
+    if (this.apiKey) {
+      this.headers['Authorization'] = `Bearer ${this.apiKey}`;
+      console.log('🤖 Venice AI Service initialized with API key');
+    } else {
       console.warn('Venice AI API key not found. Some features may be limited.');
+      console.log('🤖 Venice AI Service initialized');
     }
-    console.log('🤖 Venice AI Service initialized');
   }
 
   // List available models
@@ -86,8 +89,8 @@ class VeniceAIService {
       max_tokens: 4096,
       venice_parameters: {
         include_venice_system_prompt: true,
-        enable_web_search: 'auto',
-        enable_web_citations: true
+        strip_thinking_response: false,
+        disable_thinking: false
       }
     };
 
@@ -103,6 +106,12 @@ class VeniceAIService {
 
   // Main chat completion method
   async createCompletion(completion: VeniceCompletion): Promise<any> {
+    // Ensure we have the latest API key
+    if (!this.apiKey && process.env.VENICE_API_KEY) {
+      this.apiKey = process.env.VENICE_API_KEY;
+      this.headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
+    
     if (!this.apiKey) {
       // Simulate response if no API key
       return this.simulateResponse(completion);
